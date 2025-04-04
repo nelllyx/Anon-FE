@@ -1,0 +1,15 @@
+.hero_bg{
+    background-image: url(../../assets/pexels-anna-shvets-4557876.jpg);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position:  center;
+    height: 75vh;
+    /* background-position: center; */
+}
+
+
+.custom_p{
+    font-family: 'Montserrat', sans-serif;
+    font-size: 28px;
+    font-weight: 400;
+}
