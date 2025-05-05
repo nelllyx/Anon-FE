@@ -4,7 +4,7 @@ import SessionCard from '../../component/sessionCard/SessionCard';
 import { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaUserFriends, FaChartLine, FaBell, FaVideo, FaPlus, FaSearch, FaBars, FaUser, FaHeart, FaBook } from 'react-icons/fa';
 
-// Sample data for both roles
+//  data for both roles
 const therapistSessions = [
   { 
     therapist: "Akewe Nelson", 
@@ -109,6 +109,55 @@ const clientStats = [
   }
 ];
 
+// Add new data for messages and therapist profiles
+const therapistMessages = [
+  {
+    id: 1,
+    sender: "Sarah Johnson",
+    message: "Hi Dr. Nelson, I wanted to discuss my progress from our last session.",
+    time: "10:30 AM",
+    unread: true,
+    senderImage: "https://randomuser.me/api/portraits/women/1.jpg"
+  },
+  {
+    id: 2,
+    sender: "Michael Brown",
+    message: "Thank you for the resources you shared. They've been very helpful.",
+    time: "Yesterday",
+    unread: false,
+    senderImage: "https://randomuser.me/api/portraits/men/1.jpg"
+  }
+];
+
+const clientMessages = [
+  {
+    id: 1,
+    sender: "Dr. Nelson",
+    message: "I've reviewed your progress notes. You're making great improvements!",
+    time: "9:15 AM",
+    unread: true,
+    senderImage: "https://randomuser.me/api/portraits/men/2.jpg"
+  },
+  {
+    id: 2,
+    sender: "Dr. Nelson",
+    message: "Don't forget to complete the exercises we discussed.",
+    time: "Yesterday",
+    unread: false,
+    senderImage: "https://randomuser.me/api/portraits/men/2.jpg"
+  }
+];
+
+const therapistProfile = {
+  name: "Dr. Akewe Nelson",
+  specialization: "Clinical Psychology",
+  experience: "8 years",
+  rating: 4.9,
+  availability: "Mon-Fri, 9AM-5PM",
+  bio: "Specialized in anxiety disorders and relationship counseling. Committed to providing personalized care and evidence-based therapy.",
+  image: "https://randomuser.me/api/portraits/men/2.jpg"
+};
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
@@ -141,6 +190,7 @@ const Dashboard = () => {
 
   const currentSessions = isTherapist ? therapistSessions : clientSessions;
   const currentStats = isTherapist ? therapistStats : clientStats;
+  const currentMessages = isTherapist ? therapistMessages : clientMessages;
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -154,7 +204,7 @@ const Dashboard = () => {
 
       {/* Fixed Sidebar */}
       <div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-md z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-        <SideBar />
+        <SideBar isTherapist={isTherapist} />
       </div>
 
       {/* Overlay for mobile */}
@@ -201,6 +251,62 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* Messages Section */}
+          <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg md:text-xl font-bold text-gray-800">Messages</h2>
+              <button className="text-blue-500 hover:text-blue-600 font-medium text-sm">
+                View All
+              </button>
+            </div>
+            <div className="space-y-4">
+              {currentMessages.map((msg) => (
+                <div key={msg.id} className={`flex items-start gap-3 p-3 rounded-lg ${msg.unread ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                    <img src={msg.senderImage} alt={msg.sender} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium text-gray-800">{msg.sender}</h3>
+                      <span className="text-xs text-gray-500">{msg.time}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{msg.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Therapist Profile Section (Client View) */}
+          {!isTherapist && (
+            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden">
+                  <img src={therapistProfile.image} alt={therapistProfile.name} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h2 className="text-lg md:text-xl font-bold text-gray-800">{therapistProfile.name}</h2>
+                  <p className="text-sm text-gray-500">{therapistProfile.specialization}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">Experience</p>
+                  <p className="font-medium text-gray-800">{therapistProfile.experience}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500">Rating</p>
+                  <p className="font-medium text-gray-800">{therapistProfile.rating}/5.0</p>
+                </div>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                <p className="text-sm text-gray-500">Availability</p>
+                <p className="font-medium text-gray-800">{therapistProfile.availability}</p>
+              </div>
+              <p className="text-sm text-gray-600">{therapistProfile.bio}</p>
+            </div>
+          )}
 
           {/* Search and Quick Actions */}
           <div className="flex flex-col md:flex-row gap-4 mb-6 md:mb-8">
