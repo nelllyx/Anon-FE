@@ -53,7 +53,7 @@ const Login = ()=>{
                   <div className="mt-12">
 
                   <Link to="/" className="text-gray-400 font-sans underline text-sm font-bold" >Forgot Password?</Link>  
-                  <p className="text-blue-800 text-sm/7">Don't have an account? <Link to="/register" className="underline">Register Here</Link></p>
+                  <p className="text-blue-800 text-sm/7">Dont have an account? <Link to="/register" className="underline">Register Here</Link></p>
                   </div>
 
 

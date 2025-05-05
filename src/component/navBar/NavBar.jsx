@@ -13,7 +13,10 @@ const NavBar = ()=>{
 
             </ul>
             <div>
-            <button className="bg-blue-500 font-bold px-6 rounded-lg w-[130px] transition duration-300 text-white ">Sign Up</button>
+            <button 
+            className="bg-blue-500 font-bold px-6 rounded-lg w-[130px] transition duration-300 text-white cursor-grab "
+            onClick={()=>{window.location.href="/register"}}
+            >Sign Up</button>
             </div>
             
         

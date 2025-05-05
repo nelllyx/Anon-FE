@@ -22,7 +22,6 @@ const Home = ()=>{
                 <li className="cursor-pointer text-gray-500 p-4 mt-8 transition duration-300 ease-in-out hover:scale-105 rounded flex items-center shadow-sm hover:bg-gray-500 hover:text-white gap-4">
                 <i className="fa-solid fa-right-from-bracket"></i>  Logout</li>
                 </ul>
-            
             </div>
             
             </div>
