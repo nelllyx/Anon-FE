@@ -32,7 +32,7 @@ const therapistSessions = [
 
 const clientSessions = [
   { 
-    therapist: "Dr. Jane Smith", 
+    therapist: "Dr. Kimberly", 
     date: "23-04-2025", 
     time: "6:00 pm", 
     status: "upcoming", 
@@ -128,7 +128,6 @@ const therapistMessages = [
     senderImage: "https://randomuser.me/api/portraits/men/1.jpg"
   }
 ];
-
 const clientMessages = [
   {
     id: 1,
@@ -217,35 +216,35 @@ const Dashboard = () => {
 
       {/* Main Content - Scrollable */}
       <div className="flex-1 ml-0 md:ml-64 h-screen overflow-y-auto">
-        <div className="flex flex-col w-full p-4 md:p-8">
+        <div className="flex flex-col w-full p-3 md:p-6">
           {/* Header Section */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
                 {isTherapist ? 'Good Morning, Dr. Nelson' : 'Welcome Back, Sarah'}
               </h1>
-              <p className="text-gray-500 text-sm md:text-base">
+              <p className="text-xs md:text-sm text-gray-500">
                 {isTherapist ? 'Here\'s what\'s happening with your practice today' : 'Here\'s your therapy journey today'}
               </p>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button 
                 onClick={toggleRole}
-                className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm"
+                className="px-2 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-xs"
               >
                 {isTherapist ? 'Switch to Client View' : 'Switch to Therapist View'}
               </button>
               <div className="relative">
-                <FaBell className="text-xl text-gray-500 cursor-pointer hover:text-blue-500 transition-colors" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                <FaBell className="text-base text-gray-500 cursor-pointer hover:text-blue-500 transition-colors" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center">3</span>
               </div>
-              <div className="flex items-center gap-3 bg-white p-2 md:p-3 rounded-xl shadow-sm">
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm md:text-base">
+              <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm">
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
                   {isTherapist ? 'AN' : 'SJ'}
                 </div>
                 <div className="hidden md:block">
-                  <p className="font-medium text-gray-800">{isTherapist ? 'Dr. Nelson' : 'Sarah Johnson'}</p>
+                  <p className="text-sm font-medium text-gray-800">{isTherapist ? 'Dr. Nelson' : 'Sarah Johnson'}</p>
                   <p className="text-xs text-gray-500">{isTherapist ? 'Licensed Therapist' : 'Client'}</p>
                 </div>
               </div>
@@ -253,25 +252,25 @@ const Dashboard = () => {
           </div>
 
           {/* Messages Section */}
-          <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-gray-800">Messages</h2>
-              <button className="text-blue-500 hover:text-blue-600 font-medium text-sm">
+          <div className="bg-white rounded-xl shadow-sm p-3 md:p-4 mb-4 md:mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base md:text-lg font-bold text-gray-800">Messages</h2>
+              <button className="text-blue-500 hover:text-blue-600 font-medium text-xs">
                 View All
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {currentMessages.map((msg) => (
-                <div key={msg.id} className={`flex items-start gap-3 p-3 rounded-lg ${msg.unread ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                <div key={msg.id} className={`flex items-start gap-2 p-2 rounded-lg ${msg.unread ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                  <div className="w-8 h-8 rounded-full overflow-hidden">
                     <img src={msg.senderImage} alt={msg.sender} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-gray-800">{msg.sender}</h3>
+                      <h3 className="text-sm font-medium text-gray-800">{msg.sender}</h3>
                       <span className="text-xs text-gray-500">{msg.time}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{msg.message}</p>
+                    <p className="text-xs text-gray-600 mt-1">{msg.message}</p>
                   </div>
                 </div>
               ))}
@@ -280,113 +279,74 @@ const Dashboard = () => {
 
           {/* Therapist Profile Section (Client View) */}
           {!isTherapist && (
-            <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-full overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm p-3 md:p-4 mb-4 md:mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden">
                   <img src={therapistProfile.image} alt={therapistProfile.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h2 className="text-lg md:text-xl font-bold text-gray-800">{therapistProfile.name}</h2>
-                  <p className="text-sm text-gray-500">{therapistProfile.specialization}</p>
+                  <h2 className="text-base md:text-lg font-bold text-gray-800">{therapistProfile.name}</h2>
+                  <p className="text-xs text-gray-500">{therapistProfile.specialization}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500">Experience</p>
-                  <p className="font-medium text-gray-800">{therapistProfile.experience}</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-gray-50 p-2 rounded-lg">
+                  <p className="text-xs text-gray-500">Experience</p>
+                  <p className="text-sm font-medium text-gray-800">{therapistProfile.experience}</p>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500">Rating</p>
-                  <p className="font-medium text-gray-800">{therapistProfile.rating}/5.0</p>
+                <div className="bg-gray-50 p-2 rounded-lg">
+                  <p className="text-xs text-gray-500">Rating</p>
+                  <p className="text-sm font-medium text-gray-800">{therapistProfile.rating}/5.0</p>
                 </div>
               </div>
-              <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                <p className="text-sm text-gray-500">Availability</p>
-                <p className="font-medium text-gray-800">{therapistProfile.availability}</p>
+              <div className="bg-gray-50 p-2 rounded-lg mb-3">
+                <p className="text-xs text-gray-500">Availability</p>
+                <p className="text-sm font-medium text-gray-800">{therapistProfile.availability}</p>
               </div>
-              <p className="text-sm text-gray-600">{therapistProfile.bio}</p>
+              <p className="text-xs text-gray-600">{therapistProfile.bio}</p>
             </div>
           )}
 
-          {/* Search and Quick Actions */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6 md:mb-8">
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder={isTherapist ? "Search clients, sessions..." : "Search resources, notes..."}
-                className="w-full pl-10 pr-4 py-2 md:py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-3">
-              {isTherapist ? (
-                <>
-                  <button className="flex items-center gap-2 bg-blue-500 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl hover:bg-blue-600 transition-colors text-sm md:text-base">
-                    <FaVideo className="text-lg md:text-xl" />
-                    <span className="font-medium">New Session</span>
-                  </button>
-                  <button className="flex items-center gap-2 bg-white text-gray-700 px-3 md:px-4 py-2 md:py-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors text-sm md:text-base">
-                    <FaPlus className="text-lg md:text-xl" />
-                    <span className="font-medium">Add Client</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="flex items-center gap-2 bg-blue-500 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl hover:bg-blue-600 transition-colors text-sm md:text-base">
-                    <FaVideo className="text-lg md:text-xl" />
-                    <span className="font-medium">Join Session</span>
-                  </button>
-                  <button className="flex items-center gap-2 bg-white text-gray-700 px-3 md:px-4 py-2 md:py-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors text-sm md:text-base">
-                    <FaBook className="text-lg md:text-xl" />
-                    <span className="font-medium">Resources</span>
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
           {/* Stats Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
             {currentStats.map((stat, index) => (
-              <div key={index} className={`bg-gradient-to-br ${stat.color} rounded-xl p-4 md:p-6 shadow-sm`}>
+              <div key={index} className={`bg-gradient-to-br ${stat.color} rounded-xl p-3 md:p-4 shadow-sm`}>
                 <div className="flex items-center justify-between">
-                  <div className="p-2 md:p-3 bg-white rounded-lg shadow-sm">
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
                     {stat.icon}
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`text-sm font-medium ${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                    <span className={`text-xs font-medium ${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
                       {stat.change}
                     </span>
                   </div>
                 </div>
-                <h3 className="text-gray-500 text-xs md:text-sm mt-3 md:mt-4">{stat.title}</h3>
-                <p className="text-xl md:text-2xl font-bold text-gray-800 mt-1">{stat.value}</p>
+                <h3 className="text-xs text-gray-500 mt-2">{stat.title}</h3>
+                <p className="text-lg md:text-xl font-bold text-gray-800 mt-1">{stat.value}</p>
               </div>
             ))}
           </div>
 
           {/* Sessions Section */}
-          <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-4">
+          <div className="bg-white rounded-xl shadow-sm p-3 md:p-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-3">
               <div>
-                <h2 className="text-lg md:text-xl font-bold text-gray-800">
+                <h2 className="text-base md:text-lg font-bold text-gray-800">
                   {isTherapist ? 'Your Sessions' : 'Your Therapy Sessions'}
                 </h2>
-                <p className="text-gray-500 text-xs md:text-sm mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   {isTherapist ? 'Manage your upcoming and completed sessions' : 'View and manage your therapy sessions'}
                 </p>
               </div>
               <div className="flex gap-2">
                 <button 
-                  className={`px-3 md:px-4 py-2 rounded-lg transition-colors text-sm md:text-base ${activeTab === 'upcoming' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                  className={`px-2 py-1.5 rounded-lg transition-colors text-xs ${activeTab === 'upcoming' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
                   onClick={() => setActiveTab('upcoming')}
                 >
                   Upcoming
                 </button>
                 <button 
-                  className={`px-3 md:px-4 py-2 rounded-lg transition-colors text-sm md:text-base ${activeTab === 'completed' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                  className={`px-2 py-1.5 rounded-lg transition-colors text-xs ${activeTab === 'completed' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
                   onClick={() => setActiveTab('completed')}
                 >
                   Completed
@@ -394,7 +354,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {currentSessions.map((session, index) => (
                 <SessionCard
                   key={index}
