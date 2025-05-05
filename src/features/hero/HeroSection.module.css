@@ -3,10 +3,26 @@
     background-size: cover;
     background-repeat: no-repeat;
     background-position:  center;
+    background-attachment: fixed;
     height: 75vh;
     /* background-position: center; */
 }
 
+/* Add smooth fade-in animation for the content */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero_bg > div {
+  animation: fadeIn 1s ease-out;
+}
 
 .custom_p{
     font-family: 'Montserrat', sans-serif;

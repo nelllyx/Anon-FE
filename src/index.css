@@ -1,8 +1,6 @@
-@import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap');
 
-
+@import "tailwindcss";
 
 
 *{
