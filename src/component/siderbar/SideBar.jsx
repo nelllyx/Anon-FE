@@ -1,25 +1,25 @@
-import { FaHome, FaCalendarAlt, FaUserFriends, FaComments, FaFileMedical, FaChartLine, FaCog, FaSignOutAlt, FaUserMd, FaUser } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaUserFriends, FaComments, FaFileMedical, FaChartLine, FaCog, FaSignOutAlt, FaUserMd, FaUser, FaBlog, FaCreditCard } from 'react-icons/fa';
 import { useState } from 'react';
 
 const SideBar = ({ isTherapist = true }) => {
   const [activeItem, setActiveItem] = useState('dashboard');
 
   const therapistMenuItems = [
-    { icon: <FaHome />, label: 'Dashboard', id: 'dashboard' },
-    { icon: <FaCalendarAlt />, label: 'Appointments', id: 'appointments' },
-    { icon: <FaUserFriends />, label: 'Clients', id: 'clients' },
-    { icon: <FaComments />, label: 'Messages', id: 'messages' },
-    { icon: <FaFileMedical />, label: 'Session Notes', id: 'notes' },
-    { icon: <FaChartLine />, label: 'Analytics', id: 'analytics' },
+    { icon: <FaHome />, label: 'Home', id: 'dashboard' },
+    { icon: <FaUserFriends />, label: 'Talk to a therapist', id: 'clients' },
+    { icon: <FaComments />, label: 'Chat', id: 'messages' },
+    { icon: <FaBlog />, label: 'Blog', id: 'blog' },
+    { icon: <FaUser />, label: 'Profile', id: 'profile' },
+    { icon: <FaCreditCard />, label: 'Payments', id: 'payments' },
   ];
 
   const clientMenuItems = [
-    { icon: <FaHome />, label: 'Dashboard', id: 'dashboard' },
-    { icon: <FaCalendarAlt />, label: 'My Sessions', id: 'sessions' },
-    { icon: <FaUserMd />, label: 'My Therapist', id: 'therapist' },
-    { icon: <FaComments />, label: 'Messages', id: 'messages' },
-    { icon: <FaFileMedical />, label: 'My Progress', id: 'progress' },
+    { icon: <FaHome />, label: 'Home', id: 'dashboard' },
+    { icon: <FaUserFriends />, label: 'Talk to a therapist', id: 'clients' },
+    { icon: <FaComments />, label: 'Chat', id: 'messages' },
+    { icon: <FaBlog />, label: 'Blog', id: 'blog' },
     { icon: <FaUser />, label: 'Profile', id: 'profile' },
+    { icon: <FaCreditCard />, label: 'Payments', id: 'payments' },
   ];
 
   const menuItems = isTherapist ? therapistMenuItems : clientMenuItems;
