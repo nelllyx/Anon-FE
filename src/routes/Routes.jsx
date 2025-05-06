@@ -18,7 +18,7 @@ export const Routes = [
     },
 
     {
-        path: "/register",
+        path: "/register/client",
         element: <Register/>
     },
 
