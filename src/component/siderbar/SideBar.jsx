@@ -1,25 +1,26 @@
 import { FaHome, FaCalendarAlt, FaUserFriends, FaComments, FaFileMedical, FaChartLine, FaCog, FaSignOutAlt, FaUserMd, FaUser, FaBlog, FaCreditCard } from 'react-icons/fa';
+import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
 
 const SideBar = ({ isTherapist = true }) => {
-  const [activeItem, setActiveItem] = useState('dashboard');
+  // No need for activeItem state, NavLink handles active styling
 
   const therapistMenuItems = [
-    { icon: <FaHome />, label: 'Home', id: 'dashboard' },
-    { icon: <FaUserFriends />, label: 'Talk to a therapist', id: 'clients' },
-    { icon: <FaComments />, label: 'Chat', id: 'messages' },
-    { icon: <FaBlog />, label: 'Blog', id: 'blog' },
-    { icon: <FaUser />, label: 'Profile', id: 'profile' },
-    { icon: <FaCreditCard />, label: 'Payments', id: 'payments' },
+    { icon: <FaHome />, label: 'Home', to: '/therapist/dashboard' },
+    { icon: <FaUserFriends />, label: 'Talk to a therapist', to: '/talk-to-therapist' },
+    { icon: <FaComments />, label: 'Chat', to: '/chats' },
+    { icon: <FaBlog />, label: 'Blog', to: '/blog' },
+    { icon: <FaUser />, label: 'Profile', to: '/profile' },
+    { icon: <FaCreditCard />, label: 'Payments', to: '/payment' },
   ];
 
   const clientMenuItems = [
-    { icon: <FaHome />, label: 'Home', id: 'dashboard' },
-    { icon: <FaUserFriends />, label: 'Talk to a therapist', id: 'clients' },
-    { icon: <FaComments />, label: 'Chat', id: 'messages' },
-    { icon: <FaBlog />, label: 'Blog', id: 'blog' },
-    { icon: <FaUser />, label: 'Profile', id: 'profile' },
-    { icon: <FaCreditCard />, label: 'Payments', id: 'payments' },
+    { icon: <FaHome />, label: 'Home', to: '/client/dashboard' },
+    { icon: <FaUserFriends />, label: 'Talk to a therapist', to: '/talk-to-therapist' },
+    { icon: <FaComments />, label: 'Chat', to: '/chats' },
+    { icon: <FaBlog />, label: 'Blog', to: '/blog' },
+    { icon: <FaUser />, label: 'Profile', to: '/profile' },
+    { icon: <FaCreditCard />, label: 'Payments', to: '/payment' },
   ];
 
   const menuItems = isTherapist ? therapistMenuItems : clientMenuItems;
@@ -42,18 +43,21 @@ const SideBar = ({ isTherapist = true }) => {
       {/* Navigation Menu */}
       <nav className="flex-1 p-3 space-y-1">
         {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveItem(item.id)}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-              activeItem === item.id
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-            }`}
+          <NavLink
+            key={item.label}
+            to={item.to}
+            className={({ isActive }) =>
+              `w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left no-underline ${
+                isActive
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+              }`
+            }
+            end
           >
             <span className="text-sm">{item.icon}</span>
             <span className="text-sm font-medium">{item.label}</span>
-          </button>
+          </NavLink>
         ))}
       </nav>
 

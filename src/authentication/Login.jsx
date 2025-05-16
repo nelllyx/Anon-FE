@@ -1,9 +1,69 @@
 import phone from "../assets/loginPhoto.jpg"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useState } from "react"
 
 const Login = () => {
     const [showRegisterOptions, setShowRegisterOptions] = useState(false);
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    });
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prevState => ({
+            ...prevState,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            const response = await fetch('http://localhost:3000/api/v1/client/login', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+
+                setError(responseData.message || 'Login failed. Please try again.');
+            }
+
+            const userData = {
+                username: responseData.user.username,
+                firstName: responseData.user.firstName,
+                lastName: responseData.user.lastName,
+                userRole: responseData.user.role
+            };
+
+            // Store user data in localStorage
+            sessionStorage.setItem('token', responseData.token);
+            sessionStorage.setItem('userRole', userData.userRole);
+            sessionStorage.setItem('userData', JSON.stringify(userData));
+
+            // Redirect to appropriate dashboard
+            if (userData.userRole === 'client') {
+                navigate('/client/dashboard');
+            } else if (userData.userRole === 'therapist') {
+                navigate('/therapist/dashboard');
+            }
+
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.message || 'Invalid email or password');
+        }
+    };
 
     return (
         <div className="flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 w-full min-h-screen p-4 sm:p-6 md:p-9">
@@ -26,20 +86,27 @@ const Login = () => {
                                 Welcome back!
                             </h1>
                             <p className="text-gray-600 text-sm leading-relaxed">
-                                We're glad to see you again. Please sign in to continue your journey.
+                                We&#39;re glad to see you again. Please sign in to continue your journey.
                             </p>
                         </div>
                     </div>
-                    <form className="max-w-sm mx-auto mt-10">
+                    <form onSubmit={handleSubmit} className="max-w-sm mx-auto mt-10">
                         <div className="space-y-6">
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                                    {error}
+                                </div>
+                            )}
                             <div className="space-y-2">
-                                <label htmlFor="Email" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                                     Email Address
                                 </label>
                                 <div className="relative">
                                     <input 
-                                        type="Email"
-                                        name="Email"
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
                                         className="w-full h-12 pl-4 pr-10 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
                                         placeholder="Enter your email"
                                         required
@@ -60,6 +127,8 @@ const Login = () => {
                                     <input 
                                         type="password"
                                         name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
                                         className="w-full h-12 pl-4 pr-10 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
                                         placeholder="Enter your password"
                                         required
@@ -91,7 +160,7 @@ const Login = () => {
                             </Link>
                             <div className="relative">
                                 <p className="text-sm text-gray-600">
-                                    Don't have an account?{' '}
+                                    Don&#39;t have an account?{' '}
                                     <button 
                                         onClick={() => setShowRegisterOptions(!showRegisterOptions)}
                                         className="text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
@@ -124,4 +193,4 @@ const Login = () => {
     )
 }
 
-export default Login 
+export default Login

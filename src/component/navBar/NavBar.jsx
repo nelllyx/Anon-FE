@@ -35,8 +35,11 @@ const NavBar = () => {
             <Link to="/about" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
               About Us
             </Link>
-            <Link to="/blog" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
-              Blog
+            <Link to="/faq" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+              FAQ
+            </Link>
+            <Link to="/therapist-jobs" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+              Therapist Jobs
             </Link>
             <Link to="/book" className="text-blue-600 hover:text-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
               Book a Session
@@ -48,11 +51,12 @@ const NavBar = () => {
             <button
               onClick={toggleSignup}
               className="ml-8 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+              type="button"
+              tabIndex={0}
             >
-              Sign Up
+              Get Started
               <FaChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${isSignupOpen ? 'rotate-180' : ''}`} />
             </button>
-            
             {/* Dropdown Menu */}
             {isSignupOpen && (
               <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
@@ -116,11 +120,18 @@ const NavBar = () => {
               About Us
             </Link>
             <Link
-              to="/blog"
+              to="/faq"
               className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors duration-200"
               onClick={toggleMenu}
             >
-              Blog
+              FAQ
+            </Link>
+            <Link
+              to="/therapist-jobs"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors duration-200"
+              onClick={toggleMenu}
+            >
+              Therapist Jobs
             </Link>
             <Link
               to="/book"
@@ -130,20 +141,20 @@ const NavBar = () => {
               Book a Session
             </Link>
             <div className="pt-2 pb-1 border-t border-gray-200">
-              <div className="px-3 py-2 text-base font-medium text-gray-600">Sign Up as:</div>
+              <div className="px-3 py-2 text-base font-medium text-gray-600">Get Started:</div>
               <Link
                 to="/register/client"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors duration-200"
                 onClick={toggleMenu}
               >
-                Client
+                Sign Up as Client
               </Link>
               <Link
                 to="/register/therapist"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors duration-200"
                 onClick={toggleMenu}
               >
-                Therapist
+                Sign Up as Therapist
               </Link>
             </div>
           </div>

@@ -5,11 +5,10 @@ export default function App(){
   const router = createBrowserRouter([
     ...Routes
   ])
-return (
-  <>
-  <RouterProvider router={router}>
-
-  </RouterProvider>   
-  </>
-)
+  return (
+    <>
+    <RouterProvider router={router}>
+    </RouterProvider>   
+    </>
+  )
 }

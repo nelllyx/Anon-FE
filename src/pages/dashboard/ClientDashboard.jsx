@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import SideBar from '../../component/siderbar/SideBar';
 import SessionCard from '../../component/sessionCard/SessionCard';
-import { FaCalendarAlt, FaUserFriends, FaChartLine, FaBell, FaBars } from 'react-icons/fa';
+import { FaCalendarAlt, FaHeart, FaBook, FaBell, FaBars } from 'react-icons/fa';
 
-const therapistSessions = [
+const clientSessions = [
   { 
-    therapist: "Akewe Nelson", 
+    therapist: "Dr. Kimberly", 
     date: "23-04-2025", 
     time: "6:00 pm", 
     status: "upcoming", 
@@ -16,103 +16,86 @@ const therapistSessions = [
     notes: "Anxiety management session"
   },
   { 
-    therapist: "Akewe Nelson", 
+    therapist: "Dr. Michael Brown", 
     date: "25-04-2025", 
     time: "4:00 pm", 
     status: "upcoming", 
-    client: "Michael Brown",
-    clientImage: "https://randomuser.me/api/portraits/men/1.jpg",
+    client: "Sarah Johnson",
+    clientImage: "https://randomuser.me/api/portraits/women/1.jpg",
     duration: "60 mins",
     type: "In-Person",
     notes: "Relationship counseling"
   }
 ];
 
-const therapistStats = [
+const clientStats = [
   { 
-    title: "Today's Sessions", 
-    value: "3", 
+    title: "Next Session", 
+    value: "Tomorrow", 
     icon: <FaCalendarAlt className="text-blue-500" />, 
-    change: "+1", 
+    change: "6:00 PM", 
     color: "from-blue-50 to-blue-100",
     trend: "up"
   },
   { 
-    title: "Active Clients", 
-    value: "8", 
-    icon: <FaUserFriends className="text-green-500" />, 
-    change: "+3", 
+    title: "Progress", 
+    value: "85%", 
+    icon: <FaHeart className="text-green-500" />, 
+    change: "+5%", 
     color: "from-green-50 to-green-100",
     trend: "up"
   },
   { 
-    title: "Monthly Revenue", 
-    value: "$2,400", 
-    icon: <FaChartLine className="text-purple-500" />, 
-    change: "+8%", 
+    title: "Resources", 
+    value: "12", 
+    icon: <FaBook className="text-purple-500" />, 
+    change: "New", 
     color: "from-purple-50 to-purple-100",
     trend: "up"
   }
 ];
 
-const therapistMessages = [
+const clientMessages = [
   {
     id: 1,
-    sender: "Sarah Johnson",
-    message: "Hi Dr. Nelson, I wanted to discuss my progress from our last session.",
-    time: "10:30 AM",
+    sender: "Dr. Nelson",
+    message: "I've reviewed your progress notes. You're making great improvements!",
+    time: "9:15 AM",
     unread: true,
-    senderImage: "https://randomuser.me/api/portraits/women/1.jpg"
+    senderImage: "https://randomuser.me/api/portraits/men/2.jpg"
   },
   {
     id: 2,
-    sender: "Michael Brown",
-    message: "Thank you for the resources you shared. They've been very helpful.",
+    sender: "Dr. Nelson",
+    message: "Don't forget to complete the exercises we discussed.",
     time: "Yesterday",
     unread: false,
-    senderImage: "https://randomuser.me/api/portraits/men/1.jpg"
+    senderImage: "https://randomuser.me/api/portraits/men/2.jpg"
   }
 ];
 
-
-
-// const therapistProfile = {
-//   name: "Dr. Akewe Nelson",
-//   specialization: "Clinical Psychology",
-//   experience: "8 years",
-//   rating: 4.9,
-//   availability: "Mon-Fri, 9AM-5PM",
-//   bio: "Specialized in anxiety disorders and relationship counseling. Committed to providing personalized care and evidence-based therapy.",
-//   image: "https://randomuser.me/api/portraits/men/2.jpg"
-// };
-
-const TherapistDashboard = () => {
+const ClientDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     initials: '',
-    fullName: ''
+    image: ''
   });
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('userData'));
+    // Get user data from localStorage
+    const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (userData) {
-      const firstName = userData.firstName || '';
-      const lastName = userData.lastName || '';
-      const fullName = `${firstName} ${lastName}`.trim();
-      const initials = firstName && lastName 
-        ? `${firstName[0]}${lastName[0]}`
-        : firstName 
-          ? firstName[0] 
-          : 'T';
-
+      const userName = userData.name || 'User';
+      const nameParts = userName.split(' ');
+      const initials = nameParts.length > 1 
+        ? `${nameParts[0][0]}${nameParts[1][0]}`
+        : userName[0];
+      
       setUser({
-        firstName,
-        lastName,
-        fullName,
-        initials: initials.toUpperCase()
+        name: userName,
+        initials: initials.toUpperCase(),
       });
     }
   }, []);
@@ -148,7 +131,7 @@ const TherapistDashboard = () => {
 
       {/* Fixed Sidebar */}
       <div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-md z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-        <SideBar isTherapist={true} />
+        <SideBar isTherapist={false} />
       </div>
 
       {/* Overlay for mobile */}
@@ -166,10 +149,10 @@ const TherapistDashboard = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
-                Good Morning, Dr. {user.lastName}
+                Welcome Back, {user.name}
               </h1>
               <p className="text-xs md:text-sm text-gray-500">
-                Here&#39;s what&#39;s happening with your practice today
+                Here&#39;s your therapy journey today
               </p>
             </div>
             
@@ -179,12 +162,20 @@ const TherapistDashboard = () => {
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center">3</span>
               </div>
               <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm">
-                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
-                  {user.initials}
-                </div>
+                {user.image ? (
+                  <img 
+                    src={user.image} 
+                    alt={user.name} 
+                    className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
+                    {user.initials}
+                  </div>
+                )}
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-800">Dr. {user.fullName}</p>
-                  <p className="text-xs text-gray-500">Licensed Therapist</p>
+                  <p className="text-sm font-medium text-gray-800">{user.name}</p>
+                  <p className="text-xs text-gray-500">Client</p>
                 </div>
               </div>
             </div>
@@ -192,7 +183,7 @@ const TherapistDashboard = () => {
 
           {/* Stats Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {therapistStats.map((stat, index) => (
+            {clientStats.map((stat, index) => (
               <div key={index} className={`bg-gradient-to-br ${stat.color} p-4 rounded-xl shadow-sm`}>
                 <div className="flex items-center justify-between">
                   <div>
@@ -212,9 +203,9 @@ const TherapistDashboard = () => {
 
           {/* Sessions Section */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-4">Today&#39;s Sessions</h2>
+            <h2 className="text-lg font-semibold mb-4">Upcoming Sessions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {therapistSessions.map((session, index) => (
+              {clientSessions.map((session, index) => (
                 <SessionCard 
                   key={index}
                   therapist={session.therapist}
@@ -226,7 +217,7 @@ const TherapistDashboard = () => {
                   duration={session.duration}
                   type={session.type}
                   notes={session.notes}
-                  isTherapist={true}
+                  isTherapist={false}
                 />
               ))}
             </div>
@@ -236,7 +227,7 @@ const TherapistDashboard = () => {
           <div>
             <h2 className="text-lg font-semibold mb-4">Recent Messages</h2>
             <div className="space-y-4">
-              {therapistMessages.map((message) => (
+              {clientMessages.map((message) => (
                 <div key={message.id} className="bg-white p-4 rounded-xl shadow-sm">
                   <div className="flex items-start gap-3">
                     <img src={message.senderImage} alt={message.sender} className="w-10 h-10 rounded-full" />
@@ -261,4 +252,4 @@ const TherapistDashboard = () => {
   );
 };
 
-export default TherapistDashboard;
+export default ClientDashboard; 

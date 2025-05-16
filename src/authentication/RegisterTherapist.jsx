@@ -1,32 +1,37 @@
 import {Link, useNavigate} from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
-const Register = () => {
+const RegisterTherapist = () => {
   const navigate = useNavigate();
   const [isValid, setValid] = useState(false);
-  const [user, setUser] = useState({
-    username: '',
+  const [therapist, setTherapist] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
     password: '',
     confirmPass: '',
-    email: '',
-    gender: ''
+    gender: '',
+    specialization: '',
+    licenseNo: '',
   });
   const [error, setError] = useState("");
 
   const validate = () => {
     setValid(
-      user.username.trim().length > 2 &&
-      user.password.trim().length > 7 &&
-      user.confirmPass.trim().length > 7 &&
-      user.password === user.confirmPass &&
-      user.email.endsWith('mail.com') &&
-      (user.gender === 'male' || user.gender === 'female')
+      therapist.firstName.trim().length > 1 &&
+      therapist.lastName.trim().length > 1 &&
+      therapist.password.trim().length > 7 &&
+      therapist.confirmPass.trim().length > 7 &&
+      therapist.password === therapist.confirmPass &&
+      therapist.email.endsWith('mail.com') &&
+      therapist.licenseNo.trim().length > 3 &&
+      therapist.specialization.trim().length > 2
     );
   };
 
   useEffect(() => {
     validate();
-  }, [user.username, user.password, user.confirmPass, user.email, user.gender]);
+  }, [therapist]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,31 +40,43 @@ const Register = () => {
       return;
     }
     setError("");
+    // Proceed with registration logic
+
     try {
-      const response = await fetch('http://localhost:3000/api/v1/client/signup', {
+
+      const response = await fetch('http://localhost:3000/api/v1/therapist/registration', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(therapist),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if(response.ok){
 
-        localStorage.setItem('userData', JSON.stringify({username: data.data.user.username}))
+        const data = await  response.json();
+
+        localStorage.setItem('userData', JSON.stringify({
+          firstName: data.data.therapist.firstName,
+          lastName: data.data.therapist.lastName
+        }))
         console.log('Registration Response:', data);
 
-        navigate("/verify-otp", { 
+        navigate("/verify-otp", {
           replace: true,
-          state: { 
-            email: user.email,
-            userId: data.data.user._id,
-            userRole: data.data.user.role
+          state: {
+            email: therapist.email,
+            userId: data.data.therapist._id,
+            userRole: data.data.therapist.role
           }
-        });
-      } else {
+      })
+
+      }else {
+
         // Try to parse JSON error, fallback to text if not JSON
         let errorMsg = "Registration failed.";
-        // Clone response for fallback parsing 
+        // Clone response for fallback parsing
         const responseClone = response.clone();
         try {
           const data = await response.json();
@@ -70,10 +87,12 @@ const Register = () => {
         }
         setError(errorMsg);
       }
-    } catch (error) {
-      const errorMsg = "A network error occurred. Please try again later.";
-      setError(errorMsg);
-      console.error("Network error:", error);
+
+  }catch (error) {
+      const errorMsg = "A Network Error occurred. Please try again"
+      setError(errorMsg)
+      console.error("Network Error: " ,error)
+
     }
   };
 
@@ -84,23 +103,36 @@ const Register = () => {
           <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-sans text-2xl md:text-3xl font-bold tracking-wide">
             Anonymous Therapy
           </span>
-          <h1 className="text-2xl font-semibold text-gray-800 mt-2">Create a free account</h1>
-          <p className="text-gray-600 text-sm leading-relaxed">Please provide your valid credentials to get started.</p>
+          <h1 className="text-2xl font-semibold text-gray-800 mt-2">Therapist Registration</h1>
+          <p className="text-gray-600 text-sm leading-relaxed">Join our platform as a licensed therapist. Please provide your details below.</p>
           <p className="text-blue-500 text-xs mt-1">Your privacy is our priority. All information is confidential.</p>
         </div>
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
             <input
-              id="username"
+              id="firstName"
               type="text"
-              name="username"
-              value={user.username}
+              name="firstName"
+              value={therapist.firstName}
               className="w-full h-12 pl-4 pr-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
-              placeholder="Enter your username"
+              placeholder="Enter your first name"
               required
-              onChange={e => setUser({ ...user, username: e.target.value })}
+              onChange={e => setTherapist({ ...therapist, firstName: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
+            <input
+              id="lastName"
+              type="text"
+              name="lastName"
+              value={therapist.lastName}
+              className="w-full h-12 pl-4 pr-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
+              placeholder="Enter your last name"
+              required
+              onChange={e => setTherapist({ ...therapist, lastName: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -109,11 +141,11 @@ const Register = () => {
               id="email"
               type="email"
               name="email"
-              value={user.email}
+              value={therapist.email}
               className="w-full h-12 pl-4 pr-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
               placeholder="Enter your email"
               required
-              onChange={e => setUser({ ...user, email: e.target.value })}
+              onChange={e => setTherapist({ ...therapist, email: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -122,11 +154,11 @@ const Register = () => {
               id="password"
               type="password"
               name="password"
-              value={user.password}
+              value={therapist.password}
               className="w-full h-12 pl-4 pr-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
               placeholder="Enter your password"
               required
-              onChange={e => setUser({ ...user, password: e.target.value })}
+              onChange={e => setTherapist({ ...therapist, password: e.target.value })}
             />
           </div>
           <div className="space-y-2">
@@ -135,11 +167,11 @@ const Register = () => {
               id="confirmPass"
               type="password"
               name="confirmPass"
-              value={user.confirmPass}
+              value={therapist.confirmPass}
               className="w-full h-12 pl-4 pr-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
               placeholder="Confirm your password"
               required
-              onChange={e => setUser({ ...user, confirmPass: e.target.value })}
+              onChange={e => setTherapist({ ...therapist, confirmPass: e.target.value })}
             />
           </div>
           <div className="flex items-center gap-6 pt-2">
@@ -149,8 +181,8 @@ const Register = () => {
                 type="radio"
                 name="gender"
                 value="male"
-                checked={user.gender === 'male'}
-                onChange={() => setUser({ ...user, gender: 'male' })}
+                checked={therapist.gender === 'male'}
+                onChange={() => setTherapist({ ...therapist, gender: 'male' })}
                 className="form-radio text-blue-600"
               />
               <span className="ml-2 text-gray-700">Male</span>
@@ -160,12 +192,43 @@ const Register = () => {
                 type="radio"
                 name="gender"
                 value="female"
-                checked={user.gender === 'female'}
-                onChange={() => setUser({ ...user, gender: 'female' })}
+                checked={therapist.gender === 'female'}
+                onChange={() => setTherapist({ ...therapist, gender: 'female' })}
                 className="form-radio text-blue-600"
               />
               <span className="ml-2 text-gray-700">Female</span>
             </label>
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="license" className="block text-sm font-medium text-gray-700">License Number</label>
+            <input
+              id="license"
+              type="text"
+              name="license"
+              value={therapist.licenseNo}
+              className="w-full h-12 pl-4 pr-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
+              placeholder="Enter your license number"
+              required
+              onChange={e => setTherapist({ ...therapist, licenseNo: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="specialization" className="block text-sm font-medium text-gray-700">Specialization</label>
+            <select
+                id="specialization"
+                name="specialization"
+                value={therapist.specialization}
+                className="w-full h-12 pl-4 pr-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                required
+                onChange={e => setTherapist({...therapist, specialization: e.target.value})}
+            >
+              <option value="">Select specialization</option>
+              <option value="Adolescent therapy">Adolescent therapy</option>
+              <option value="Clinical psychology">Clinical psychology</option>
+              <option value="Marriage and family therapy">Marriage and family therapy</option>
+              <option value="Cbt">Cognitive behavior therapy</option>
+              <option value="Nutritional therapy">Nutritional therapy</option>
+            </select>
           </div>
           <div className="flex items-center justify-center pt-4">
             <button
@@ -173,18 +236,18 @@ const Register = () => {
               disabled={!isValid}
               className={`text-white font-medium bg-gradient-to-r from-blue-600 to-indigo-600 py-3 px-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] ${!isValid ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Sign Up
+              Register
             </button>
           </div>
         </form>
         <div className="mt-10 space-y-4 text-center">
           <p className="text-sm text-gray-600">
-            Are you a therapist?{' '}
+            Want to register as a client?{' '}
             <Link
-              to="/register/therapist"
+              to="/register/client"
               className="text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
             >
-              Register as Therapist
+              Register as Client
             </Link>
           </p>
           <p className="text-sm text-gray-600">
@@ -202,4 +265,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default RegisterTherapist; 
