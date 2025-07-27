@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { setUserData, setToken } from '../utils/auth';
 
 const OTPVerification = () => {
   const navigate = useNavigate();
@@ -51,6 +52,7 @@ const OTPVerification = () => {
       const response = await fetch('http://localhost:3000/api/v1/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userType: userRole,
           id: userId,
@@ -61,17 +63,15 @@ const OTPVerification = () => {
       const responseData = await response.json();
 
       if (response.ok) {
-        // Store authentication data
-        localStorage.setItem('token', responseData.token);
-        localStorage.setItem('userRole', userRole);
-        
-        // Store user data
+        // Store user data and token
         const userData = {
           firstName: responseData.data.user.firstName,
           lastName: responseData.data.user.lastName,
           username: responseData.data.user.username,
+          role: userRole
         };
-        localStorage.setItem('userData', JSON.stringify(userData));
+        setUserData(userData);
+        setToken(responseData.token); // Set the authentication token
 
         // Navigate based on user role
         if (userRole === 'client') {
@@ -97,6 +97,7 @@ const OTPVerification = () => {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ 
           id: userId,
           role: userRole

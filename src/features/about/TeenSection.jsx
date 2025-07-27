@@ -3,7 +3,7 @@ import { FaComments, FaLock, FaHeart, FaUserMd } from 'react-icons/fa';
 
 const TeenSection = () => {
   return (
-    <section className="w-full py-16 md:py-24 bg-gradient-to-b from-white to-blue-50">
+    <section className="w-full py-16 md:py-20 bg-gradient-to-b from-white to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16">

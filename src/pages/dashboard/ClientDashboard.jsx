@@ -85,9 +85,9 @@ const ClientDashboard = () => {
 
   useEffect(() => {
     // Get user data from localStorage
-    const userData = JSON.parse(sessionStorage.getItem('userData'));
+    const userData = JSON.parse(localStorage.getItem('userData'));
     if (userData) {
-      const userName = userData.name || 'User';
+      const userName = userData.username || 'User';
       const nameParts = userName.split(' ');
       const initials = nameParts.length > 1 
         ? `${nameParts[0][0]}${nameParts[1][0]}`

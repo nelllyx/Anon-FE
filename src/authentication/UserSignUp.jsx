@@ -46,7 +46,6 @@ const Register = () => {
         const data = await response.json();
 
         localStorage.setItem('userData', JSON.stringify({username: data.data.user.username}))
-        console.log('Registration Response:', data);
 
         navigate("/verify-otp", { 
           replace: true,
@@ -56,6 +55,7 @@ const Register = () => {
             userRole: data.data.user.role
           }
         });
+
       } else {
         // Try to parse JSON error, fallback to text if not JSON
         let errorMsg = "Registration failed.";

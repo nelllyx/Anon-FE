@@ -8,7 +8,7 @@ const AboutUs = () => {
             Why Choose Us
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            We're committed to making mental health support accessible, professional, and personalized for everyone.
+            We&#39;re committed to making mental health support accessible, professional, and personalized for everyone.
           </p>
         </div>
 
@@ -21,7 +21,7 @@ const AboutUs = () => {
                 Mental Health is No Joke
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Mental health is not a luxury—it's a necessity. 
+                Mental health is not a luxury—it's a necessity.
                 In a world that often misunderstands emotional struggles, we're here to provide a sanctuary of support,
                 understanding, and professional care.
               </p>

@@ -18,7 +18,7 @@ const Chat = () => {
 
   // Get user info from localStorage
   useEffect(() => {
-    const storedUserInfo = localStorage.getItem('userInfo');
+    const storedUserInfo = localStorage.getItem('userData');
     if (storedUserInfo) {
       setUserInfo(JSON.parse(storedUserInfo));
     } else {

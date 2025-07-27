@@ -1,97 +1,178 @@
-import {useState} from 'react';
-import {FaArrowRight} from 'react-icons/fa';
+import {useState, useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {FaArrowRight, FaCheckCircle, FaTimesCircle, FaSpinner} from 'react-icons/fa';
+import PaystackPop from '@paystack/inline-js'
+import { isAuthenticated, getUserData, getToken } from '../../utils/auth';
 
 const PaymentForm = () => {
   const [email, setEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
+  const [transactionStatus, setTransactionStatus] = useState(null);
+  const navigate = useNavigate();
 
+  // On mount, check for subscriptionData and create pending subscription if needed
+  useEffect(() => {
+    const createPendingSubscription = async (data) => {
+      sessionStorage.setItem('creatingSubscription', 'true');
+      try {
+        const response = await fetch('http://localhost:3000/api/v1/client/subscriptions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify({
+            planName: data.planName,
+            status: 'pending'
+          })
+        });
+        const result = await response.json();
+        if (result && result.data && result.data.id) {
+          data.id = result.data.id;
+          sessionStorage.setItem('subscriptionData', JSON.stringify(data));
+        } else {
+          let errorText = 'Failed to create subscription.';
+          if (result && result.message) {
+            errorText = 'Failed to activate subscription.' + result.message;
+          }
+          setError(errorText);
+        }
+      } catch (err) {
+        setError('Network error. Please try again.');
+      } finally {
+        sessionStorage.removeItem('creatingSubscription');
+      }
+    };
+
+    if (!isAuthenticated()) {
+      navigate('/login', { state: { from: '/payment' } });
+      return;
+    }
+
+    const userData = getUserData();
+    if (!userData || userData.role !== 'client') {
+      navigate('/unauthorized');
+      return;
+    }
+
+    let data = sessionStorage.getItem('subscriptionData');
+    if (data) {
+      data = JSON.parse(data);
+      setAmount(data.price.toString());
+      // Only create pending subscription if no id and not already creating
+      if (!data.id && !sessionStorage.getItem('creatingSubscription')) {
+        createPendingSubscription(data);
+      }
+    } else {
+      navigate('/client/dashboard');
+    }
+  }, [navigate]);
+
+  const checkTransactionStatus = async (reference) => {
+
+    setLoading(true);
+    try {
+      const endpoint = `http://localhost:3000/api/v1/client/payment/verify/${reference}`;
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+        },
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setTransactionStatus({
+          success: true,
+          message: 'Subscription payment successful!',
+          data: data.data
+        });
+        sessionStorage.removeItem('subscriptionData');
+        navigate('/client/dashboard');
+      } else {
+        setTransactionStatus({
+          success: false,
+          message: data.message || 'Payment verification failed'
+        });
+      }
+    } catch (error) {
+      setTransactionStatus({
+        success: false,
+        message: 'Error verifying payment status'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async(e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
-    // Validation
+
+    if (!isAuthenticated()) {
+      navigate('/login', { state: { from: '/payment' } });
+      return;
+    }
+
     if (!email.trim()) {
       setError('Please enter a valid email.');
       return;
     }
-    if (!amount.trim() || isNaN(amount) || Number(amount) <= 0) {
+    if (!amount.trim() || Number(amount) <= 0) {
       setError('Please enter a valid amount.');
       return;
     }
+
+    setLoading(true);
+
     try {
-
-      const token = localStorage.getItem('token')
-      const responseDataString = sessionStorage.getItem('responseData')
-      const responseData = JSON.parse(responseDataString);
-      const bookingId = responseData.id;
-      console.log(bookingId)
-      const response = await fetch('http://localhost:3000/api/v1/client/payment/initialize', {
-
+      const data = JSON.parse(sessionStorage.getItem('subscriptionData'));
+      if (!data || !data.id) {
+        setError('Subscription not initialized. Please try again.');
+        setLoading(false);
+        return;
+      }
+      const endpoint = 'http://localhost:3000/api/v1/client/payment/initialize';
+      const requestBody = {
+        email,
+        amount,
+        subscriptionId: data.id
+      };
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
         },
-        body: JSON.stringify({
-         email,
-          amount,
-          bookingId
-        })
-
-      })
-
-
-      if(response.ok){
-
-        const responseData = await response.json()
-
-
-
-        console.log(responseData);
-
-
-        setLoading(true);
-        // Simulate payment process
-        setTimeout(() => {
-          setLoading(false);
-          setSuccess('Payment initiated successfully!');
-          setEmail('');
-          setAmount('');
-        }, 1500);
-
-        window.location.href = responseData.data.authorization_url;
-
-      }else {
-
-        // Try to parse JSON error, fallback to text if not JSON
-        let errorMsg = "Payment initialization failed. Please try again.";
-        // Clone response for fallback parsing
-        const responseClone = response.clone();
-        try {
-          const data = await response.json();
-          errorMsg = "Payment initialization failed: " + (data.message || errorMsg);
-        } catch {
-          const text = await responseClone.text();
-          if (text) errorMsg = "Payment initialization failed: " + text;
-        }
-        setError(errorMsg);
-
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+      });
+      const paymentResponse = await response.json();
+      if (response.ok) {
+        const popup = new PaystackPop();
+        popup.resumeTransaction(paymentResponse.data.access_code, {
+          onSuccess: (transaction) => {
+            checkTransactionStatus(transaction.reference);
+          },
+          onCancel: () => {
+            setTransactionStatus({
+              success: false,
+              message: 'Payment was cancelled'
+            });
+          }
+        });
+      } else {
+        setError(paymentResponse.message || 'Payment initialization failed. Please try again.');
       }
-
-
-    }catch (error){
-
-      const errorMsg = "A network error occurred. Please try again later.";
-      setError(errorMsg);
+    } catch (error) {
+      setError('A network error occurred. Please try again later.');
       console.error("Network error:", error);
+    } finally {
+      setLoading(false);
     }
-
-
-
   };
 
   return (
@@ -102,24 +183,51 @@ const PaymentForm = () => {
         autoComplete="off"
         aria-label="Payment form"
       >
-        <h2 className="py-3 text-yellow-500 text-3xl font-extrabold text-center mb-2">Payment Details</h2>
-        <p className="text-center text-gray-500 mb-6 text-sm">Fill in the details below to proceed with your payment.</p>
-        {error && <div className="mb-4 text-red-600 text-center text-sm font-semibold">{error}</div>}
-        {success && <div className="mb-4 text-green-600 text-center text-sm font-semibold">{success}</div>}
+        <h2 className="py-3 text-yellow-500 text-3xl font-extrabold text-center mb-2">
+          Subscription Payment
+        </h2>
+        <p className="text-center text-gray-500 mb-6 text-sm">
+          Complete your subscription payment to unlock therapy sessions.
+        </p>
+        
+        {transactionStatus && (
+          <div className={`mb-4 p-4 rounded-lg flex items-center gap-3 ${
+            transactionStatus.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+          }`}>
+            {loading ? (
+              <FaSpinner className="animate-spin text-blue-500" />
+            ) : transactionStatus.success ? (
+              <FaCheckCircle className="text-green-500" />
+            ) : (
+              <FaTimesCircle className="text-red-500" />
+            )}
+            <span className={transactionStatus.success ? 'text-green-600 font-medium' : 'text-red-600'}>
+              {transactionStatus.message}
+            </span>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
+            {error}
+          </div>
+        )}
+
         <div className="mb-4">
-          <label htmlFor="category" className="block text-sm font-semibold mb-1">Email Address</label>
+          <label htmlFor="email" className="block text-sm font-semibold mb-1">Email Address</label>
           <input
-            id="category"
-            name="category"
-            type="text"
+            id="email"
+            name="email"
+            type="email"
             className="mb-1 h-[50px] w-full pl-4 pr-3 text-white bg-[#223C60] border-2 border-transparent focus:text-white focus:bg-[#0C4160] focus:border-[#2d4dda] focus:shadow-none focus:outline-none rounded-lg placeholder:text-sm placeholder:font-semibold transition"
             placeholder="Email Address"
             value={email}
             onChange={e => setEmail(e.target.value)}
             aria-required="true"
-            aria-label="Category"
+            aria-label="Email Address"
           />
         </div>
+
         <div className="mb-6">
           <label htmlFor="amount" className="block text-sm font-semibold mb-1">Amount</label>
           <input
@@ -134,6 +242,7 @@ const PaymentForm = () => {
             aria-label="Amount"
           />
         </div>
+
         <button
           type="submit"
           className={`mb-3 w-full h-[60px] flex items-center justify-center gap-3 bg-gradient-to-r from-[#77A1D3] via-[#79CBCA] to-[#77A1D3] border-none transition-all duration-500 bg-[size:200%_auto] hover:bg-right-center hover:text-white focus:outline-none rounded-lg text-lg font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed transform transition-transform duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-xl`}

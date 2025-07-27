@@ -4,40 +4,17 @@ import Login from "../authentication/Login"
 import Register from "../authentication/UserSignUp"
 import RegisterTherapist from "../authentication/RegisterTherapist"
 import ClientDashboard from "../pages/dashboard/ClientDashboard"
-import Chat from "../pages/chat"
+import Chat from "../pages/chat/index.jsx"
 import TherapistDashboard from "../pages/dashboard/TherapistDashboard"
 import OTPVerification from "../authentication/OTPVerification"
 import PaymentForm from "../components/payment/PaymentForm"
-import { Navigate } from 'react-router-dom'
 import TalkToTherapist from "../components/therapist/TalkToTherapist"
-
-// Protected Route Component
-// eslint-disable-next-line react/prop-types
-const ProtectedRoute = ({ children }) => {
-  const token = sessionStorage.getItem('token');
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-  return children;
-};
-
-// Role-based Protected Route Component
-// eslint-disable-next-line react/prop-types
-const RoleProtectedRoute = ({ children, allowedRole }) => {
-
-  const token = sessionStorage.getItem('token');
-  const userRole = sessionStorage.getItem('userRole');
-  
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  if (userRole !== allowedRole) {
-    return <Navigate to={`/${userRole}/dashboard`} replace />;
-  }
-  
-  return children;
-};
+import SubscriptionPlans from "../components/subscription/SubscriptionPlans"
+import ProtectedRoute from '../components/ProtectedRoute'
+import Unauthorized from '../pages/Unauthorized'
+import PaymentHistory from "../components/payment/PaymentHistory"
+import ClientProfile from "../components/profile/ClientProfile"
+import TherapistProfile from "../components/profile/TherapistProfile"
 
 export const Routes = [
     {
@@ -74,9 +51,9 @@ export const Routes = [
     {
         path: "/client/dashboard",
         element: (
-            <RoleProtectedRoute allowedRole="client">
+            <ProtectedRoute requiredRole="client">
                 <ClientDashboard />
-            </RoleProtectedRoute>
+            </ProtectedRoute>
         )
     },
 
@@ -92,27 +69,68 @@ export const Routes = [
     {
         path: "/therapist/dashboard",
         element: (
-            <RoleProtectedRoute allowedRole="therapist">
+            <ProtectedRoute requiredRole="therapist">
                 <TherapistDashboard />
-            </RoleProtectedRoute>
+            </ProtectedRoute>
         )
     },
 
     {
         path: "/payment",
         element: (
-            <RoleProtectedRoute allowedRole="client">
+            <ProtectedRoute requiredRole="client">
                 <PaymentForm />
-            </RoleProtectedRoute>
+            </ProtectedRoute>
+        )
+    },
+
+    {
+        path: "/payment-history",
+        element: (
+            <ProtectedRoute requiredRole="client">
+                <PaymentHistory />
+            </ProtectedRoute>
+        )
+    },
+
+    {
+        path: "/subscribe",
+        element: (
+            <ProtectedRoute requiredRole="client">
+                <SubscriptionPlans />
+            </ProtectedRoute>
         )
     },
 
     {
         path: "/talk-to-therapist",
         element: (
-            <RoleProtectedRoute allowedRole="client">
+            <ProtectedRoute requiredRole="client">
                 <TalkToTherapist />
-            </RoleProtectedRoute>
+            </ProtectedRoute>
         )
+    },
+
+    {
+        path: "/client/profile",
+        element: (
+            <ProtectedRoute requiredRole="client">
+                <ClientProfile />
+            </ProtectedRoute>
+        )
+    },
+
+    {
+        path: "/therapist/profile",
+        element: (
+            <ProtectedRoute requiredRole="therapist">
+                <TherapistProfile />
+            </ProtectedRoute>
+        )
+    },
+
+    {
+        path: '/unauthorized',
+        element: <Unauthorized />
     }
 ]

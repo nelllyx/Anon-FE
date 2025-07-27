@@ -1,16 +1,47 @@
-import { FaHome, FaCalendarAlt, FaUserFriends, FaComments, FaFileMedical, FaChartLine, FaCog, FaSignOutAlt, FaUserMd, FaUser, FaBlog, FaCreditCard } from 'react-icons/fa';
-import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { FaHome, FaUserFriends, FaComments, FaCog, FaSignOutAlt, FaUser, FaBlog, FaCreditCard } from 'react-icons/fa';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { clearAuth, getUserData } from '../../utils/auth';
+import { useState, useEffect } from 'react';
 
-const SideBar = ({ isTherapist = true }) => {
-  // No need for activeItem state, NavLink handles active styling
+const SideBar = () => {
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const data = getUserData();
+    setUserData(data);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        credentials: 'include',
+        mode: 'cors'
+      });
+
+      // Always clear auth and redirect, regardless of server response
+      clearAuth();
+      navigate('/login');
+    } catch (error) {
+      // If there's an error, still clear auth and redirect
+      clearAuth();
+      navigate('/login');
+    }
+  };
+
+  const isTherapist = userData?.role === 'therapist';
 
   const therapistMenuItems = [
     { icon: <FaHome />, label: 'Home', to: '/therapist/dashboard' },
-    { icon: <FaUserFriends />, label: 'Talk to a therapist', to: '/talk-to-therapist' },
     { icon: <FaComments />, label: 'Chat', to: '/chats' },
     { icon: <FaBlog />, label: 'Blog', to: '/blog' },
-    { icon: <FaUser />, label: 'Profile', to: '/profile' },
+    { icon: <FaUser />, label: 'Profile', to: '/therapist/profile' },
     { icon: <FaCreditCard />, label: 'Payments', to: '/payment' },
   ];
 
@@ -19,11 +50,25 @@ const SideBar = ({ isTherapist = true }) => {
     { icon: <FaUserFriends />, label: 'Talk to a therapist', to: '/talk-to-therapist' },
     { icon: <FaComments />, label: 'Chat', to: '/chats' },
     { icon: <FaBlog />, label: 'Blog', to: '/blog' },
-    { icon: <FaUser />, label: 'Profile', to: '/profile' },
-    { icon: <FaCreditCard />, label: 'Payments', to: '/payment' },
+    { icon: <FaUser />, label: 'Profile', to: '/client/profile' },
+    { icon: <FaCreditCard />, label: 'Payments', to: '/payment-history' },
   ];
 
   const menuItems = isTherapist ? therapistMenuItems : clientMenuItems;
+
+  // Get initials for avatar
+  const getInitials = () => {
+    if (!userData) return '';
+    const { firstName, lastName } = userData;
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
+  };
+
+  // Get full name
+  const getFullName = () => {
+    if (!userData) return '';
+    const { firstName, lastName } = userData;
+    return `${firstName || ''} ${lastName || ''}`.trim();
+  };
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: "#111827" }}>
@@ -65,10 +110,10 @@ const SideBar = ({ isTherapist = true }) => {
       <div className="p-3 border-t border-gray-700">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">{isTherapist ? 'AN' : 'SJ'}</span>
+            <span className="text-white font-bold text-sm">{getInitials()}</span>
           </div>
           <div>
-            <p className="text-sm font-medium text-white">{isTherapist ? 'Dr. Nelson' : 'Sarah Johnson'}</p>
+            <p className="text-sm font-medium text-white">{getFullName()}</p>
             <p className="text-xs text-gray-400">{isTherapist ? 'Licensed Therapist' : 'Client'}</p>
           </div>
         </div>
@@ -78,7 +123,10 @@ const SideBar = ({ isTherapist = true }) => {
             <FaCog className="text-sm" />
             <span className="text-sm font-medium">Settings</span>
           </button>
-          <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-900 hover:text-white transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-900 hover:text-white transition-colors"
+          >
             <FaSignOutAlt className="text-sm" />
             <span className="text-sm font-medium">Sign Out</span>
           </button>

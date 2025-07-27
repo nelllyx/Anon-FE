@@ -1,10 +1,10 @@
 import femaleTherapist from "../../assets/pexels-emmy.jpg";
-import maleTherapist from "../../assets/male.jpg";
-import secondFemale from "../../assets/female2.jpg";
+import maleTherapist from "../../assets/doctor.jpg";
+import secondFemale from "../../assets/medical-assistant.jpg";
 
 const TherapySection = () => {
   return (
-    <section className="w-full py-16 md:py-24 bg-white">
+    <section className="w-full py-16 md:py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16">

@@ -32,7 +32,7 @@ const NavBar = () => {
             <Link to="/" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
               Home
             </Link>
-            <Link to="/about" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+            <Link to="/AboutUs" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
               About Us
             </Link>
             <Link to="/faq" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
@@ -41,7 +41,7 @@ const NavBar = () => {
             <Link to="/therapist-jobs" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
               Therapist Jobs
             </Link>
-            <Link to="/book" className="text-blue-600 hover:text-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
               Book a Session
             </Link>
           </div>
@@ -67,7 +67,7 @@ const NavBar = () => {
                     role="menuitem"
                     onClick={toggleSignup}
                   >
-                    Sign Up as Client
+                   Client
                   </Link>
                   <Link
                     to="/register/therapist"
@@ -75,7 +75,7 @@ const NavBar = () => {
                     role="menuitem"
                     onClick={toggleSignup}
                   >
-                    Sign Up as Therapist
+                  Therapist
                   </Link>
                 </div>
               </div>

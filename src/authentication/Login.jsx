@@ -1,6 +1,7 @@
 import phone from "../assets/loginPhoto.jpg"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useState } from "react"
+import { setUserData, setToken } from '../utils/auth'
 
 const Login = () => {
     const [showRegisterOptions, setShowRegisterOptions] = useState(false);
@@ -9,12 +10,14 @@ const Login = () => {
         password: ''
     });
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prevState => ({
-            ...prevState,
+        setFormData(prev => ({
+            ...prev,
             [name]: value
         }));
     };
@@ -22,46 +25,61 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3000/api/v1/client/login', {
+            const response = await fetch('http://localhost:3000/api/v1/login', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
+                // credentials: 'include',
+                // mode: 'cors',
                 body: JSON.stringify(formData)
             });
 
-            const responseData = await response.json();
+            const data = await response.json();
 
-            if (!response.ok) {
+            if (response.ok) {
+                // Store token and user data
+                setToken(data.data.token);
+                setUserData(data.data.user);
 
-                setError(responseData.message || 'Login failed. Please try again.');
+                // Redirect based on user role
+                const userRole = data.data.user.role;
+                const from = location.state?.from?.pathname;
+
+                if (from) {
+                    navigate(from, { replace: true });
+                } else {
+                    let redirectPath = '/client/dashboard';
+                    if (userRole === 'therapist') {
+                        redirectPath = '/therapist/dashboard';
+                    }
+                    navigate(redirectPath, { replace: true });
+                }
+            } else {
+                // Handle different types of error responses
+                if (response.status === 401) {
+                    setError('Invalid email or password');
+                } else if (response.status === 429) {
+                    setError('Too many login attempts. Please try again later.');
+                } else if (response.status === 500) {
+                    setError('Server error. Please try again later.');
+                } else {
+                    setError(data.message || 'Login failed. Please try again.');
+                }
             }
-
-            const userData = {
-                username: responseData.user.username,
-                firstName: responseData.user.firstName,
-                lastName: responseData.user.lastName,
-                userRole: responseData.user.role
-            };
-
-            // Store user data in localStorage
-            sessionStorage.setItem('token', responseData.token);
-            sessionStorage.setItem('userRole', userData.userRole);
-            sessionStorage.setItem('userData', JSON.stringify(userData));
-
-            // Redirect to appropriate dashboard
-            if (userData.userRole === 'client') {
-                navigate('/client/dashboard');
-            } else if (userData.userRole === 'therapist') {
-                navigate('/therapist/dashboard');
+        } catch (error) {
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                setError('Unable to connect to the server. Please check your internet connection.');
+            } else {
+                setError('An unexpected error occurred. Please try again later.');
             }
-
-        } catch (err) {
-            console.error('Login error:', err);
-            setError(err.message || 'Invalid email or password');
+            console.error('Login error:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -105,6 +123,7 @@ const Login = () => {
                                     <input 
                                         type="email"
                                         name="email"
+                                        id="email"
                                         value={formData.email}
                                         onChange={handleChange}
                                         className="w-full h-12 pl-4 pr-10 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
@@ -127,6 +146,7 @@ const Login = () => {
                                     <input 
                                         type="password"
                                         name="password"
+                                        id="password"
                                         value={formData.password}
                                         onChange={handleChange}
                                         className="w-full h-12 pl-4 pr-10 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
@@ -144,9 +164,12 @@ const Login = () => {
                             <div className="flex items-center justify-center pt-4">
                                 <button 
                                     type='submit' 
-                                    className="text-white font-medium bg-gradient-to-r from-blue-600 to-indigo-600 py-3 px-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full md:w-2/3 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02]"
+                                    disabled={isLoading}
+                                    className={`text-white font-medium bg-gradient-to-r from-blue-600 to-indigo-600 py-3 px-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full md:w-2/3 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-[1.02] ${
+                                        isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                                 >
-                                    Sign In
+                                    {isLoading ? 'Signing in...' : 'Sign In'}
                                 </button>
                             </div>
                         </div>
