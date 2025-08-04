@@ -5,8 +5,8 @@ import { isAuthenticated, hasRole, getToken } from '../../utils/auth';
 
 const PLAN_THERAPIES = {
   Basic: ['Nutritional Therapy', 'Adolescent Therapy'],
-  Standard: ['Marriage & Family Therapy', 'Nutritional Therapy', 'Cognitive Therapy', 'Adolescent Therapy' ],
-  Premium: ['Clinical Psychology', 'Marriage & Family Therapy', 'Nutritional Therapy', 'Cognitive Therapy', 'Career & Life Coaching'],
+  Standard: ['Marriage and Family Therapy', 'Nutritional Therapy', 'Cognitive Therapy', 'Adolescent Therapy' ],
+  Premium: ['Clinical Psychology', 'Marriage and Family Therapy', 'Nutritional Therapy', 'Cognitive Therapy', 'Career and Life Coaching'],
 };
 
 const AVAILABLE_DAYS = [
@@ -167,7 +167,7 @@ const TalkToTherapist = () => {
           preferredTime: timePreference
         }),
       });
-
+console.log(userPlan, therapyType,selectedDays, timePreference)
       if (response.ok) {
         let timePreferenceLabel = TIME_PREFERENCES.find(t => t.id === timePreference)?.label;
         setBookingMsg(

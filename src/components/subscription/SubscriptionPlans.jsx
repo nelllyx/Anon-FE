@@ -64,7 +64,7 @@ const SubscriptionPlans = () => {
     }
 
     if (planDetails.price === 0) {
-      activateFreePlan(planDetails);
+      await activateFreePlan(planDetails);
       return;
     }
 

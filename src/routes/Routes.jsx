@@ -14,7 +14,9 @@ import ProtectedRoute from '../components/ProtectedRoute'
 import Unauthorized from '../pages/Unauthorized'
 import PaymentHistory from "../components/payment/PaymentHistory"
 import ClientProfile from "../components/profile/ClientProfile"
+import ClientSettings from "../components/settings/ClientSettings.jsx"
 import TherapistProfile from "../components/profile/TherapistProfile"
+import TherapistSettings from "../components/settings/TherapistSettings"
 
 export const Routes = [
     {
@@ -125,6 +127,25 @@ export const Routes = [
         element: (
             <ProtectedRoute requiredRole="therapist">
                 <TherapistProfile />
+            </ProtectedRoute>
+        )
+    },
+
+
+    {
+        path: "/client/settings",
+        element: (
+            <ProtectedRoute requiredRole="client">
+                <ClientSettings />
+            </ProtectedRoute>
+        )
+    },
+
+    {
+        path: "/therapist/settings",
+        element: (
+            <ProtectedRoute requiredRole="therapist">
+                <TherapistSettings />
             </ProtectedRoute>
         )
     },

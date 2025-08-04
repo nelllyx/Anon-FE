@@ -14,7 +14,7 @@ const SideBar = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/logout', {
+      await fetch('http://localhost:3000/api/v1/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,14 +28,21 @@ const SideBar = () => {
       // Always clear auth and redirect, regardless of server response
       clearAuth();
       navigate('/login');
-    } catch (error) {
-      // If there's an error, still clear auth and redirect
-      clearAuth();
-      navigate('/login');
+    } catch (err) {
+
+      console.error('Logout failed:', err);
     }
   };
 
   const isTherapist = userData?.role === 'therapist';
+
+  const UserSettings = async  ()=> {
+    if(isTherapist){
+      navigate('/therapist/settings')
+    }else {
+      navigate('/client/settings')
+    }
+  }
 
   const therapistMenuItems = [
     { icon: <FaHome />, label: 'Home', to: '/therapist/dashboard' },
@@ -49,7 +56,6 @@ const SideBar = () => {
     { icon: <FaHome />, label: 'Home', to: '/client/dashboard' },
     { icon: <FaUserFriends />, label: 'Talk to a therapist', to: '/talk-to-therapist' },
     { icon: <FaComments />, label: 'Chat', to: '/chats' },
-    { icon: <FaBlog />, label: 'Blog', to: '/blog' },
     { icon: <FaUser />, label: 'Profile', to: '/client/profile' },
     { icon: <FaCreditCard />, label: 'Payments', to: '/payment-history' },
   ];
@@ -86,7 +92,7 @@ const SideBar = () => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 p-3 space-y-4">
         {menuItems.map((item) => (
           <NavLink
             key={item.label}
@@ -119,7 +125,7 @@ const SideBar = () => {
         </div>
 
         <div className="space-y-1">
-          <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:bg-gray-700 hover:text-white transition-colors">
+          <button onClick={UserSettings} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:bg-gray-700 hover:text-white transition-colors">
             <FaCog className="text-sm" />
             <span className="text-sm font-medium">Settings</span>
           </button>
