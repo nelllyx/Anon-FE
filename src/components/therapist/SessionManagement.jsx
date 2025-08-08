@@ -7,7 +7,6 @@ import {
   FaUser, 
   FaVideo, 
   FaMapMarkerAlt,
-  FaSearch,
   FaBook,
   FaRedo
 } from 'react-icons/fa';
@@ -22,7 +21,6 @@ const SessionManagement = () => {
   const [error, setError] = useState('');
   const [showSetTimeModal, setShowSetTimeModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
   const tabs = [
     { id: 'upcoming', label: 'Upcoming Sessions', icon: <FaCalendarAlt /> },
@@ -36,7 +34,7 @@ const SessionManagement = () => {
 
   useEffect(() => {
     filterSessions();
-  }, [sessions, searchTerm, activeTab]);
+  }, [sessions, activeTab]);
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -109,15 +107,7 @@ const SessionManagement = () => {
   };
 
   const filterSessions = () => {
-    let filtered = sessions.filter(session => session.status === activeTab);
-
-    if (searchTerm) {
-      filtered = filtered.filter(session => 
-        session.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        session.notes?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
+    const filtered = sessions.filter(session => session.status === activeTab);
     setFilteredSessions(filtered);
   };
 
@@ -254,41 +244,23 @@ const SessionManagement = () => {
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
-              <div className="text-center">
-                <p className="text-xs text-gray-500">Today&#39;s Sessions</p>
-                <p className="text-lg font-semibold text-blue-600">
-                  {sessions.filter(s => 
-                    s.status === 'upcoming' && 
-                    new Date(s.sessionDate).toDateString() === new Date().toDateString()
-                  ).length}
-                </p>
-              </div>
-              <div className="h-8 w-px bg-gray-300"></div>
-              <div className="text-center">
-                <p className="text-xs text-gray-500">This Week</p>
-                <p className="text-lg font-semibold text-blue-600">
-                  {sessions.filter(s => s.status === 'upcoming').length}
-                </p>
-              </div>
+          <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg">
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Today&#39;s Sessions</p>
+              <p className="text-lg font-semibold text-blue-600">
+                {sessions.filter(s => 
+                  s.status === 'upcoming' && 
+                  new Date(s.sessionDate).toDateString() === new Date().toDateString()
+                ).length}
+              </p>
             </div>
-            
-            <button 
-              onClick={() => {
-                setActiveTab('upcoming');
-                setSelectedSession({
-                  isNew: true,
-                  sessionDate: new Date().toISOString().split('T')[0],
-                  status: 'upcoming'
-                });
-                setShowSetTimeModal(true);
-              }}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <FaCalendarAlt />
-              New Session
-            </button>
+            <div className="h-8 w-px bg-gray-300"></div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">This Week</p>
+              <p className="text-lg font-semibold text-blue-600">
+                {sessions.filter(s => s.status === 'upcoming').length}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -300,19 +272,7 @@ const SessionManagement = () => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
-          <input
-            type="text"
-            placeholder="Search sessions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
+
 
       {/* Tabs */}
       <div className="mb-6">
@@ -485,9 +445,7 @@ const SessionManagement = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No {activeTab} sessions found
             </h3>
-            <p className="text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms.' : `You don't have any ${activeTab} sessions at the moment.`}
-            </p>
+
           </div>
         )}
       </div>
