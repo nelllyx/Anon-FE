@@ -1,103 +1,67 @@
 import { useState, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
 import SideBar from '../../component/siderbar/SideBar';
 import SessionCard from '../../component/sessionCard/SessionCard';
-import { FaCalendarAlt, FaUserFriends, FaChartLine, FaBell, FaBars } from 'react-icons/fa';
+import { FaCalendarAlt,  FaChartLine, FaBell, FaBars, FaUserPlus, FaClipboardList, FaLightbulb,  FaUsers, FaGraduationCap, FaStar } from 'react-icons/fa';
+import { getUserData } from '../../utils/auth';
 
-const therapistSessions = [
-  { 
-    therapist: "Akewe Nelson", 
-    date: "23-04-2025", 
-    time: "6:00 pm", 
-    status: "upcoming", 
-    client: "Sarah Johnson",
-    clientImage: "https://randomuser.me/api/portraits/women/1.jpg",
-    duration: "45 mins",
-    type: "Video Call",
-    notes: "Anxiety management session"
-  },
-  { 
-    therapist: "Akewe Nelson", 
-    date: "25-04-2025", 
-    time: "4:00 pm", 
-    status: "upcoming", 
-    client: "Michael Brown",
-    clientImage: "https://randomuser.me/api/portraits/men/1.jpg",
-    duration: "60 mins",
-    type: "In-Person",
-    notes: "Relationship counseling"
-  }
-];
-
-const therapistStats = [
-  { 
-    title: "Today's Sessions", 
-    value: "3", 
-    icon: <FaCalendarAlt className="text-blue-500" />, 
-    change: "+1", 
-    color: "from-blue-50 to-blue-100",
-    trend: "up"
-  },
-  { 
-    title: "Active Clients", 
-    value: "8", 
-    icon: <FaUserFriends className="text-green-500" />, 
-    change: "+3", 
-    color: "from-green-50 to-green-100",
-    trend: "up"
-  },
-  { 
-    title: "Monthly Revenue", 
-    value: "$2,400", 
-    icon: <FaChartLine className="text-purple-500" />, 
-    change: "+8%", 
-    color: "from-purple-50 to-purple-100",
-    trend: "up"
-  }
-];
-
-const therapistMessages = [
-  {
-    id: 1,
-    sender: "Sarah Johnson",
-    message: "Hi Dr. Nelson, I wanted to discuss my progress from our last session.",
-    time: "10:30 AM",
-    unread: true,
-    senderImage: "https://randomuser.me/api/portraits/women/1.jpg"
-  },
-  {
-    id: 2,
-    sender: "Michael Brown",
-    message: "Thank you for the resources you shared. They've been very helpful.",
-    time: "Yesterday",
-    unread: false,
-    senderImage: "https://randomuser.me/api/portraits/men/1.jpg"
-  }
-];
-
-
-
-// const therapistProfile = {
-//   name: "Dr. Akewe Nelson",
-//   specialization: "Clinical Psychology",
-//   experience: "8 years",
-//   rating: 4.9,
-//   availability: "Mon-Fri, 9AM-5PM",
-//   bio: "Specialized in anxiety disorders and relationship counseling. Committed to providing personalized care and evidence-based therapy.",
-//   image: "https://randomuser.me/api/portraits/men/2.jpg"
-// };
+// Default content for when no sessions are available
+const defaultContent = {
+  welcomeMessage: "Welcome to your therapy practice!",
+  nextSteps: [
+    {
+      title: "Complete Your Profile",
+      description: "Help clients find you by completing your professional profile and credentials.",
+      icon: <FaClipboardList className="text-blue-500" />,
+      action: "Update Profile",
+      link: "/therapist/profile"
+    },
+    {
+      title: "Set Your Availability",
+      description: "Configure your schedule and availability to start accepting clients.",
+      icon: <FaCalendarAlt className="text-green-500" />,
+      action: "Set Schedule",
+      link: "/therapist/schedule"
+    },
+    {
+      title: "Browse Resources",
+      description: "Access professional development resources and therapeutic tools.",
+      icon: <FaLightbulb className="text-purple-500" />,
+      action: "View Resources",
+      link: "/resources"
+    }
+  ],
+  tips: [
+    "Maintain clear communication with your clients",
+    "Keep detailed session notes for better continuity",
+    "Stay updated with the latest therapeutic techniques",
+    "Practice self-care to provide the best care for others"
+  ]
+};
 
 const TherapistDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState({
     firstName: '',
     lastName: '',
     initials: '',
     fullName: ''
   });
+  const [sessions, setSessions] = useState([]);
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    completedSessions: 0,
+    upcomingSessions: 0,
+    activeClients: 0,
+    monthlyRevenue: 0
+  });
+  const [messages, setMessages] = useState([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('userData'));
+    const userData = getUserData();
     if (userData) {
       const firstName = userData.firstName || '';
       const lastName = userData.lastName || '';
@@ -118,6 +82,67 @@ const TherapistDashboard = () => {
   }, []);
 
   useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Fetch therapist sessions from API
+      const sessionsResponse = await fetch('http://localhost:3000/api/v1/therapist/sessions', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (sessionsResponse.ok) {
+        const sessionsData = await sessionsResponse.json();
+        setSessions(sessionsData.data?.Sessions || []);
+
+        // Calculate stats from sessions
+        const upcomingSessions = sessionsData.data?.Sessions?.filter(s => s.status === 'upcoming') || [];
+        const completedSessions = sessionsData.data?.Sessions?.filter(s => s.status === 'completed') || [];
+
+        setStats({
+          totalSessions: sessionsData.data?.Sessions?.length || 0,
+          completedSessions: completedSessions.length,
+          upcomingSessions: upcomingSessions.length,
+          activeClients: sessionsData.data?.activeClients || 0,
+          monthlyRevenue: sessionsData.data?.monthlyRevenue || 0
+        });
+      }
+
+      // Fetch messages from API
+      const messagesResponse = await fetch('http://localhost:3000/api/v1/therapist/messages', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (messagesResponse.ok) {
+        const messagesData = await messagesResponse.json();
+        setMessages(messagesData.messages || []);
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
       if (window.innerWidth < 768) {
@@ -135,6 +160,66 @@ const TherapistDashboard = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  // Generate dynamic stats based on real data
+  const generateStats = () => {
+    if (sessions.length === 0) {
+      return [
+        {
+          title: "Get Started",
+          value: "0",
+          icon: <FaUserPlus className="text-blue-500" />,
+          change: "Complete profile",
+          color: "from-blue-50 to-blue-100",
+          trend: "up"
+        },
+        {
+          title: "Profile Complete",
+          value: "0%",
+          icon: <FaClipboardList className="text-green-500" />,
+          change: "Update profile",
+          color: "from-green-50 to-green-100",
+          trend: "up"
+        },
+        {
+          title: "Resources",
+          value: "10+",
+          icon: <FaGraduationCap className="text-purple-500" />,
+          change: "Available",
+          color: "from-purple-50 to-purple-100",
+          trend: "up"
+        }
+      ];
+    }
+
+    return [
+      {
+        title: "Today's Sessions",
+        value: stats.upcomingSessions.toString(),
+        icon: <FaCalendarAlt className="text-blue-500" />,
+        change: `${stats.totalSessions} total`,
+        color: "from-blue-50 to-blue-100",
+        trend: "up"
+      },
+      {
+        title: "Active Clients",
+        value: stats.activeClients.toString(),
+        icon: <FaUsers className="text-green-500" />,
+        change: `${stats.completedSessions} completed`,
+        color: "from-green-50 to-green-100",
+        trend: "up"
+      },
+      {
+        title: "Monthly Revenue",
+        value: `$${stats.monthlyRevenue.toLocaleString()}`,
+        icon: <FaChartLine className="text-purple-500" />,
+        change: "+12%",
+        color: "from-purple-50 to-purple-100",
+        trend: "up"
+      }
+    ];
+  };
+
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -190,71 +275,143 @@ const TherapistDashboard = () => {
             </div>
           </div>
 
-          {/* Stats Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {therapistStats.map((stat, index) => (
-              <div key={index} className={`bg-gradient-to-br ${stat.color} p-4 rounded-xl shadow-sm`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">{stat.title}</p>
-                    <p className="text-xl font-semibold mt-1">{stat.value}</p>
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <>
+              {/* Stats Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {generateStats().map((stat, index) => (
+                  <div key={index} className={`bg-gradient-to-br ${stat.color} p-4 rounded-xl shadow-sm`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">{stat.title}</p>
+                        <p className="text-xl font-semibold mt-1">{stat.value}</p>
+                      </div>
+                      <div className="text-2xl">{stat.icon}</div>
+                    </div>
+                    <div className="mt-2 flex items-center text-xs">
+                      <span className={`${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                        {stat.change}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-2xl">{stat.icon}</div>
-                </div>
-                <div className="mt-2 flex items-center text-xs">
-                  <span className={`${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
-                    {stat.change}
-                  </span>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
 
           {/* Sessions Section */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-4">Today&#39;s Sessions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {therapistSessions.map((session, index) => (
-                <SessionCard 
-                  key={index}
-                  therapist={session.therapist}
-                  date={session.date}
-                  time={session.time}
-                  status={session.status}
-                  client={session.client}
-                  clientImage={session.clientImage}
-                  duration={session.duration}
-                  type={session.type}
-                  notes={session.notes}
-                  isTherapist={true}
-                />
-              ))}
-            </div>
-          </div>
+          {!isLoading && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {sessions.length > 0 ? 'Today\'s Sessions' : 'Get Started'}
+              </h2>
 
-          {/* Messages Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Recent Messages</h2>
-            <div className="space-y-4">
-              {therapistMessages.map((message) => (
-                <div key={message.id} className="bg-white p-4 rounded-xl shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <img src={message.senderImage} alt={message.sender} className="w-10 h-10 rounded-full" />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium">{message.sender}</h3>
-                        <span className="text-xs text-gray-500">{message.time}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{message.message}</p>
+              {sessions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {sessions.map((session, index) => (
+                    <SessionCard 
+                      key={index}
+                      therapist={`${session.therapistId?.firstName || ''} ${session.therapistId?.lastName || ''}`}
+                      date={session.date ? format(parseISO(session.date), 'do MMMM, yyyy') : session.date}
+                      time={session.startTime}
+                      status={session.status}
+                      client={`${session.clientId?.firstName || ''} ${session.clientId?.lastName || ''}`}
+                      clientImage={session.clientImage}
+                      duration={session.duration}
+                      type={session.therapyType}
+                      notes={session.notes}
+                      isTherapist={true}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FaUserPlus className="text-blue-600 text-2xl" />
                     </div>
-                    {message.unread && (
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    )}
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                      Ready to Start Your Practice?
+                    </h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      Set up your profile and availability to start connecting with clients and building your practice.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {defaultContent.nextSteps.map((step, index) => (
+                        <div key={index} className="text-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                          <div className="text-2xl mb-2">{step.icon}</div>
+                          <h4 className="font-medium text-gray-800 mb-1">{step.title}</h4>
+                          <p className="text-sm text-gray-600 mb-3">{step.description}</p>
+                          <button
+                            onClick={() => window.location.href = step.link}
+                            className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                          >
+                            {step.action} →
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
+          )}
+
+          {/* Messages Section */}
+          {!isLoading && (
+            <div>
+              <h2 className="text-lg font-semibold mb-4">
+                {messages.length > 0 ? 'Recent Messages' : 'Professional Tips'}
+              </h2>
+
+              {messages.length > 0 ? (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div key={message.id} className="bg-white p-4 rounded-xl shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <img src={message.senderImage} alt={message.sender} className="w-10 h-10 rounded-full" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">{message.sender}</h3>
+                            <span className="text-xs text-gray-500">{message.time}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{message.message}</p>
+                        </div>
+                        {message.unread && (
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {defaultContent.tips.map((tip, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 border border-gray-100 rounded-lg">
+                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <FaStar className="text-green-600 text-sm" />
+                        </div>
+                        <p className="text-sm text-gray-700">{tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,13 @@
-import { FaHome, FaUserFriends, FaComments, FaCog, FaSignOutAlt, FaUser, FaBlog, FaCreditCard } from 'react-icons/fa';
+import {
+  FaHome,
+  FaUserFriends,
+  FaComments,
+  FaCog,
+  FaSignOutAlt,
+  FaUser,
+  FaCreditCard,
+  FaCalendarAlt
+} from 'react-icons/fa';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { clearAuth, getUserData } from '../../utils/auth';
 import { useState, useEffect } from 'react';
@@ -46,8 +55,8 @@ const SideBar = () => {
 
   const therapistMenuItems = [
     { icon: <FaHome />, label: 'Home', to: '/therapist/dashboard' },
+    { icon: <FaCalendarAlt />, label: 'Manage Sessions', to: '/therapist/sessions' },
     { icon: <FaComments />, label: 'Chat', to: '/chats' },
-    { icon: <FaBlog />, label: 'Blog', to: '/blog' },
     { icon: <FaUser />, label: 'Profile', to: '/therapist/profile' },
     { icon: <FaCreditCard />, label: 'Payments', to: '/payment' },
   ];

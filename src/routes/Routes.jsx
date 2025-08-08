@@ -17,6 +17,7 @@ import ClientProfile from "../components/profile/ClientProfile"
 import ClientSettings from "../components/settings/ClientSettings.jsx"
 import TherapistProfile from "../components/profile/TherapistProfile"
 import TherapistSettings from "../components/settings/TherapistSettings"
+import SessionManagement from "../components/therapist/SessionManagement"
 
 export const Routes = [
     {
@@ -146,6 +147,15 @@ export const Routes = [
         element: (
             <ProtectedRoute requiredRole="therapist">
                 <TherapistSettings />
+            </ProtectedRoute>
+        )
+    },
+
+    {
+        path: "/therapist/sessions",
+        element: (
+            <ProtectedRoute requiredRole="therapist">
+                <SessionManagement />
             </ProtectedRoute>
         )
     },

@@ -248,7 +248,7 @@ const SubscriptionPlans = () => {
 
               {/* Features List - More Compact */}
               <div className="flex-1 mb-6">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4 text-center">What's Included:</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 text-center">What&#39;s Included:</h4>
                 <ul className="space-y-3">
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-start gap-3">
