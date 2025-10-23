@@ -6,7 +6,7 @@ const TherapistProfile = () => {
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
+        phoneNumber: '',
         specialization: '',
         yearsOfExperience: '',
         bio: '',
@@ -14,7 +14,7 @@ const TherapistProfile = () => {
         certifications: '',
         hourlyRate: ''
     });
-    const [profileImage, setProfileImage] = useState(null);
+    const [avatar, setAvatar] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -28,7 +28,7 @@ const TherapistProfile = () => {
                 firstName: userData.firstName || '',
                 lastName: userData.lastName || '',
                 email: userData.email || '',
-                phone: userData.phone || '',
+                phoneNumber: userData.phoneNumber || '',
                 specialization: userData.specialization || '',
                 yearsOfExperience: userData.yearsOfExperience || '',
                 bio: userData.bio || '',
@@ -53,7 +53,7 @@ const TherapistProfile = () => {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setProfileImage(file);
+            setAvatar(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreviewUrl(reader.result);
@@ -70,14 +70,14 @@ const TherapistProfile = () => {
         try {
             // First, upload the profile image if it exists
             let imageUrl = '';
-            if (profileImage) {
+            if (avatar) {
                 const imageFormData = new FormData();
-                imageFormData.append('profileImage', profileImage);
+                imageFormData.append('avatar', avatar);
 
-                const imageResponse = await fetch('http://localhost:3000/api/v1/therapist/upload-profile-image', {
-                    method: 'POST',
+                const imageResponse = await fetch('http://localhost:3000/api/v1/therapist/update-profile', {
+                    method: 'PATCH',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
                     },
                     body: imageFormData
                 });
@@ -91,11 +91,11 @@ const TherapistProfile = () => {
             }
 
             // Then update the profile
-            const response = await fetch('http://localhost:3000/api/v1/therapist/profile', {
-                method: 'PUT',
+            const response = await fetch('http://localhost:3000/api/v1/therapist/update-profile', {
+                method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
                     ...formData,
@@ -106,6 +106,7 @@ const TherapistProfile = () => {
             const data = await response.json();
 
             if (response.ok) {
+                console.log(response)
                 setMessage({ type: 'success', text: 'Profile updated successfully!' });
             } else {
                 setMessage({ type: 'error', text: data.message || 'Failed to update profile' });
@@ -171,7 +172,7 @@ const TherapistProfile = () => {
                                 value={formData.firstName}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                required
+
                             />
                         </div>
 
@@ -185,7 +186,7 @@ const TherapistProfile = () => {
                                 value={formData.lastName}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                required
+
                             />
                         </div>
 
@@ -199,7 +200,7 @@ const TherapistProfile = () => {
                                 value={formData.email}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                required
+
                             />
                         </div>
 
@@ -209,8 +210,8 @@ const TherapistProfile = () => {
                             </label>
                             <input
                                 type="tel"
-                                name="phone"
-                                value={formData.phone}
+                                name="phoneNumber"
+                                value={formData.phoneNumber}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -226,7 +227,7 @@ const TherapistProfile = () => {
                                 value={formData.specialization}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                required
+
                             />
                         </div>
 
@@ -241,7 +242,7 @@ const TherapistProfile = () => {
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 min="0"
-                                required
+
                             />
                         </div>
 
@@ -257,7 +258,6 @@ const TherapistProfile = () => {
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 min="0"
                                 step="0.01"
-                                required
                             />
                         </div>
                     </div>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCrown, FaStar, FaGem, FaCheckCircle, FaClock, FaCalendarAlt, FaUsers, FaHeart, FaShieldAlt } from 'react-icons/fa';
-import { isAuthenticated, hasRole, getToken } from '../../utils/auth';
+import {clearAuth, hasRole} from '../../utils/auth';
+import { useAuthenticatedFetch, debugCookies } from '../../utils/api';
 
 const PLANS = [
   { 
@@ -44,13 +45,10 @@ const SubscriptionPlans = () => {
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const navigate = useNavigate();
+  const authenticatedFetch = useAuthenticatedFetch();
 
-  // Authentication and role checks
+  // Optional client role check. Auth is enforced by server via cookies.
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate('/login', { state: { from: '/subscribe' } });
-      return;
-    }
     if (!hasRole('client')) {
       navigate('/unauthorized');
     }
@@ -70,13 +68,8 @@ const SubscriptionPlans = () => {
 
     // For paid plans, try to create a pending subscription first
     try {
-      const token = getToken();
-      const response = await fetch('http://localhost:3000/api/v1/client/subscriptions', {
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/client/subscriptions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify({
           planName: planDetails.name,
           status: 'pending'
@@ -92,7 +85,9 @@ const SubscriptionPlans = () => {
           type: 'subscription'
         }));
         navigate('/payment');
-      } else {
+      }else if(response.status === 401) clearAuth()
+
+      else {
         // Show backend error message on subscription page
         let errorText = 'Failed to create subscription.';
         if (result && result.message) {
@@ -106,14 +101,9 @@ const SubscriptionPlans = () => {
   };
 
   const activateFreePlan = async (planDetails) => {
-    const token = getToken();
     try {
-      const response = await fetch('http://localhost:3000/api/v1/client/subscriptions', {
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/client/subscriptions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify({
           planName: planDetails.name
         })
@@ -165,6 +155,29 @@ const SubscriptionPlans = () => {
               <span className="text-blue-500">•</span>
               <FaShieldAlt className="text-xl text-green-500" />
               <span className="font-semibold">100% Confidential</span>
+            </div>
+            
+            {/* Debug buttons - remove after testing */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={debugCookies}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm"
+              >
+                Debug Cookies
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await authenticatedFetch('http://localhost:3000/api/v1/client/subscription/plan');
+                    console.log('Test API call result:', response.status);
+                  } catch (error) {
+                    console.error('Test API call error:', error);
+                  }
+                }}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm"
+              >
+                Test API Call
+              </button>
             </div>
           </div>
           <div className="flex-1 flex justify-center">

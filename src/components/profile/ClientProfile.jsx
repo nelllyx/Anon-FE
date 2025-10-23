@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getUserData } from '../../utils/auth';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const ClientProfile = () => {
     const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ const ClientProfile = () => {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const authenticatedFetch = useAuthenticatedFetch();
 
     useEffect(() => {
         // Load user data on component mount
@@ -36,12 +38,8 @@ const ClientProfile = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            const response = await fetch('http://localhost:3000/api/v1/client/profile', {
+            const response = await authenticatedFetch('http://localhost:3000/api/v1/client/profile', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
                 body: JSON.stringify(formData)
             });
 

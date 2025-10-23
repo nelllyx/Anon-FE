@@ -1,16 +1,10 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { isAuthenticated, hasRole } from '../utils/auth';
+import { Navigate } from 'react-router-dom';
+import { hasRole } from '../utils/auth.js'
+
 
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const location = useLocation();
 
-
-  // Check if user is authenticated
-  if (!isAuthenticated()) {
-    console.log('Not authenticated, redirecting to login');
-    // Redirect to login page but save the attempted url
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+  // No client-side auth verification. Server will protect API routes.
 
   // If role is required, check if user has the required role
   if (requiredRole && !hasRole(requiredRole)) {

@@ -63,7 +63,7 @@ const OTPVerification = () => {
       const responseData = await response.json();
 
       if (response.ok) {
-        // Store user data and token
+        // Store user data (tokens are now in cookies)
         const userData = {
           firstName: responseData.data.user.firstName,
           lastName: responseData.data.user.lastName,
@@ -71,7 +71,11 @@ const OTPVerification = () => {
           role: userRole
         };
         setUserData(userData);
-        setToken(responseData.token); // Set the authentication token
+        
+        // Optional: Also store token in sessionStorage as backup
+        if (responseData.data.token) {
+          setToken(responseData.data.token);
+        }
 
         // Navigate based on user role
         if (userRole === 'client') {
@@ -90,11 +94,8 @@ const OTPVerification = () => {
 
   const handleResendOTP = async () => {
     try {
-      const endpoint = userRole === 'client' 
-        ? 'http://localhost:3000/api/v1/client/resend-otp'
-        : 'http://localhost:3000/api/v1/therapist/resend-otp';
 
-      const response = await fetch(endpoint, {
+      const response = await fetch('http://localhost:3000/api/v1/resend-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaCalendarAlt, FaClock, FaUsers, FaHeart, FaShieldAlt, FaRegCalendarCheck } from 'react-icons/fa';
-import { isAuthenticated, hasRole, getToken } from '../../utils/auth';
+import { hasRole } from '../../utils/auth';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const PLAN_THERAPIES = {
   Basic: ['Nutritional Therapy', 'Adolescent Therapy'],
@@ -14,8 +15,8 @@ const AVAILABLE_DAYS = [
 ];
 
 const TIME_PREFERENCES = [
-  { id: 'morning', label: 'Morning', time: '8 AM - 12 PM', icon: '🌅' },
-  { id: 'afternoon', label: 'Afternoon', time: '1 PM - 5 PM', icon: '☀️' },
+  { id: 'Morning', label: 'Morning', time: '8 AM - 12 PM', icon: '🌅' },
+  { id: 'Afternoon', label: 'Afternoon', time: '1 PM - 5 PM', icon: '☀️' },
   { id: 'Evening', label: 'Evening', time: '5 PM - 9 PM', icon: '🌙' }
 ];
 
@@ -34,14 +35,10 @@ const TalkToTherapist = () => {
   const [showModal, setShowModal] = useState(false);
   const [userPlan, setUserPlan] = useState(null);
   const navigate = useNavigate();
+  const authenticatedFetch = useAuthenticatedFetch();
 
-  // Authentication check and fetch user's active plan
+  // Fetch user's active plan; auth is enforced by server via cookies
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate('/login', { state: { from: '/talk-to-therapist' } });
-      return;
-    }
-
     if (!hasRole('client')) {
       navigate('/unauthorized');
       return;
@@ -59,15 +56,7 @@ const TalkToTherapist = () => {
     sessionStorage.setItem('fetchingUserPlan', 'true');
     
     try {
-      const token = getToken();
-
-      const response = await fetch('http://localhost:3000/api/v1/client/subscription/plan', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/client/subscription/plan');
 
       if (response.ok) {
         const data = await response.json();
@@ -119,11 +108,6 @@ const TalkToTherapist = () => {
     setBookingMsg('');
     setError('');
     
-    if (!isAuthenticated()) {
-      navigate('/login', { state: { from: '/talk-to-therapist' } });
-      return;
-    }
-
     if (!userPlan) {
       setError('Please subscribe to a plan before booking sessions.');
       navigate('/subscribe');
@@ -147,19 +131,8 @@ const TalkToTherapist = () => {
     }
 
     try {
-      const token = getToken();
-      if (!token) {
-        setError('Authentication token not found. Please log in again.');
-        navigate('/login', { state: { from: '/talk-to-therapist' } });
-        return;
-      }
-
-      const response = await fetch('http://localhost:3000/api/v1/client/session', {
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/client/session', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify({
           planName: userPlan,
           therapyType: therapyType,
@@ -167,7 +140,7 @@ const TalkToTherapist = () => {
           preferredTime: timePreference
         }),
       });
-console.log(userPlan, therapyType,selectedDays, timePreference)
+  console.log(userPlan, therapyType,selectedDays, timePreference)
       if (response.ok) {
         let timePreferenceLabel = TIME_PREFERENCES.find(t => t.id === timePreference)?.label;
         setBookingMsg(

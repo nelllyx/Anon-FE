@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
 import SideBar from '../../component/siderbar/SideBar';
-import SessionCard from '../../component/sessionCard/SessionCard';
-import { FaCalendarAlt,  FaChartLine, FaBell, FaBars, FaUserPlus, FaClipboardList, FaLightbulb,  FaUsers, FaGraduationCap, FaStar } from 'react-icons/fa';
+import { FaCalendarAlt,  FaChartLine, FaBell, FaBars, FaUserPlus, FaClipboardList, FaLightbulb,  FaUsers, FaGraduationCap, FaStar, FaVideo, FaMapMarkerAlt, FaArrowRight } from 'react-icons/fa';
 import { getUserData } from '../../utils/auth';
 
 // Default content for when no sessions are available
@@ -90,17 +88,13 @@ const TherapistDashboard = () => {
     setError('');
 
     try {
-      const token = sessionStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
 
       // Fetch therapist sessions from API
       const sessionsResponse = await fetch('http://localhost:3000/api/v1/therapist/sessions', {
         method: 'GET',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         }
       });
 
@@ -123,10 +117,10 @@ const TherapistDashboard = () => {
 
       // Fetch messages from API
       const messagesResponse = await fetch('http://localhost:3000/api/v1/therapist/messages', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
       });
 
       if (messagesResponse.ok) {
@@ -311,30 +305,119 @@ const TherapistDashboard = () => {
             </>
           )}
 
-          {/* Sessions Section */}
+          {/* Quick Actions & Today's Overview */}
           {!isLoading && (
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-4">
-                {sessions.length > 0 ? 'Today\'s Sessions' : 'Get Started'}
+                {sessions.length > 0 ? 'Today\'s Overview' : 'Get Started'}
               </h2>
 
               {sessions.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {sessions.map((session, index) => (
-                    <SessionCard 
-                      key={index}
-                      therapist={`${session.therapistId?.firstName || ''} ${session.therapistId?.lastName || ''}`}
-                      date={session.date ? format(parseISO(session.date), 'do MMMM, yyyy') : session.date}
-                      time={session.startTime}
-                      status={session.status}
-                      client={`${session.clientId?.firstName || ''} ${session.clientId?.lastName || ''}`}
-                      clientImage={session.clientImage}
-                      duration={session.duration}
-                      type={session.therapyType}
-                      notes={session.notes}
-                      isTherapist={true}
-                    />
-                  ))}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Today's Sessions Summary */}
+                  <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">Today&#39;s Sessions</h3>
+                      <button 
+                        onClick={() => window.location.href = '/therapist/sessions'}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        View All <FaArrowRight className="text-xs" />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {sessions.slice(0, 3).map((session, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600 font-medium text-sm">
+                                {session.clientId?.firstName?.charAt(0)?.toUpperCase() || 'C'}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800">
+                                {session.clientId?.firstName} {session.clientId?.lastName}
+                              </p>
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <span>{session.startTime}</span>
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  {session.therapyType === 'video' ? <FaVideo className="text-blue-500" /> : <FaMapMarkerAlt className="text-green-500" />}
+                                  {session.therapyType === 'video' ? 'Video' : 'In-Person'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              session.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                              session.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {session.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {sessions.length > 3 && (
+                        <div className="text-center pt-2">
+                          <button 
+                            onClick={() => window.location.href = '/therapist/sessions'}
+                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            +{sessions.length - 3} more sessions
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                    <div className="space-y-3">
+                      <button 
+                        onClick={() => window.location.href = '/therapist/sessions'}
+                        className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <FaCalendarAlt className="text-blue-600" />
+                          </div>
+                          <span className="font-medium text-gray-800">Manage Sessions</span>
+                        </div>
+                        <FaArrowRight className="text-gray-400" />
+                      </button>
+                      
+                      <button 
+                        onClick={() => window.location.href = '/chats'}
+                        className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <FaUserFriends className="text-green-600" />
+                          </div>
+                          <span className="font-medium text-gray-800">Client Messages</span>
+                        </div>
+                        <FaArrowRight className="text-gray-400" />
+                      </button>
+                      
+                      <button 
+                        onClick={() => window.location.href = '/therapist/profile'}
+                        className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <FaClipboardList className="text-purple-600" />
+                          </div>
+                          <span className="font-medium text-gray-800">Update Profile</span>
+                        </div>
+                        <FaArrowRight className="text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-white rounded-xl shadow-sm p-6">

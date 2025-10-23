@@ -40,7 +40,7 @@ const SessionCard = ({ therapist, date, time, status, client, clientImage, durat
       </div>
 
       <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
-        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden">
+        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden">
           <img 
             src={clientImage} 
             alt={isTherapist ? client : therapist}

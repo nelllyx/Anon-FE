@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiSend, FiPaperclip, FiSmile, FiX } from 'react-icons/fi';
 import EmojiPicker from 'emoji-picker-react';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -15,6 +16,7 @@ const Chat = () => {
   const fileInputRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   // Get user info from localStorage
   useEffect(() => {
@@ -74,18 +76,10 @@ const Chat = () => {
 
   const fetchMessages = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/v1/messages/${chatId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await authenticatedFetch(`http://localhost:3000/api/v1/messages/${chatId}`);
       if (response.ok) {
         const data = await response.json();
         setMessages(data);
-      } else if (response.status === 401) {
-        // Handle unauthorized access
-        navigate('/login');
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -106,12 +100,8 @@ const Chat = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/v1/messages', {
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/messages', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData,
       });
 
@@ -120,8 +110,6 @@ const Chat = () => {
         setMessages(prev => [...prev, messageData]);
         setNewMessage('');
         setSelectedFile(null);
-      } else if (response.status === 401) {
-        navigate('/login');
       }
     } catch (error) {
       console.error('Error sending message:', error);

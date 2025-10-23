@@ -28,7 +28,6 @@ const SideBar = () => {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         credentials: 'include',
         mode: 'cors'

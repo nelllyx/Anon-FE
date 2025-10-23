@@ -1,4 +1,17 @@
-// User data management
+// Minimal client-side helpers. Server handles authentication via HTTP-only cookies.
+
+
+export const getCookieNames = () => ({
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+});
+
+export const hasRefreshCookie = () => {
+  const { refreshToken } = getCookieNames();
+  return document.cookie.includes(`${refreshToken}=`);
+};
+
+// Optional: store lightweight user info if backend returns it after login
 export const setUserData = (userData) => {
   localStorage.setItem('userData', JSON.stringify(userData));
 };
@@ -13,26 +26,17 @@ export const removeUserData = () => {
 };
 
 // Token management
-export const setToken = (token) => {
-  sessionStorage.setItem('token', token);
+export const setToken = () => {
+  // Tokens are managed by the server via HTTP-only cookies
+  console.log('Tokens managed via HTTP-only cookies');
 };
 
 export const getToken = () => {
-  return sessionStorage.getItem('token');
+  // Not accessible on client
+  return null;
 };
 
-export const removeToken = () => {
-  sessionStorage.removeItem('token');
-};
-
-// Auth check - checks for token and user data
-export const isAuthenticated = () => {
-  const token = getToken();
-  const userData = getUserData();
-  return !!token && !!userData;
-};
-
-// Role check - gets role from user data
+// Role helper based on locally cached user data (optional)
 export const hasRole = (requiredRole) => {
   const userData = getUserData();
   return userData?.role === requiredRole;
@@ -40,6 +44,20 @@ export const hasRole = (requiredRole) => {
 
 // Clear all auth data
 export const clearAuth = () => {
-  removeToken();
   removeUserData();
+  window.location.href = '/login';
 }; 
+
+// Call backend logout to clear HTTP-only cookies, then clear client state
+export const logout = async () => {
+  try {
+    await fetch('http://localhost:3000/api/v1/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (e) {
+    // ignore network errors; still clear client state
+  } finally {
+    clearAuth();
+  }
+};

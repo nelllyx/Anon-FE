@@ -46,11 +46,13 @@ const SetTimeModal = ({ session, onClose, onSave }) => {
     }
 
     setLoading(true);
+    console.log('💾 Saving session time for session:', session.id, 'with data:', formData);
 
     try {
       await onSave(formData);
+      console.log('✅ Session time saved successfully');
     } catch (error) {
-      console.error('Error saving session time:', error);
+      console.error('❌ Error saving session time:', error);
       setErrors({ submit: 'Failed to save session time. Please try again.' });
     } finally {
       setLoading(false);

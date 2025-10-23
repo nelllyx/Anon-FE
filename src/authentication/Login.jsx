@@ -1,7 +1,7 @@
 import phone from "../assets/loginPhoto.jpg"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useState } from "react"
-import { setUserData, setToken } from '../utils/auth'
+import { setUserData } from '../utils/auth'
 
 const Login = () => {
     const [showRegisterOptions, setShowRegisterOptions] = useState(false);
@@ -34,16 +34,15 @@ const Login = () => {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                // credentials: 'include',
-                // mode: 'cors',
-                body: JSON.stringify(formData)
+                credentials: 'include', // Include cookies in the request
+                mode: 'cors',
+                body: JSON.stringify(formData),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // Store token and user data
-                setToken(data.data.token);
+                // Store user data (tokens are now in cookies)
                 setUserData(data.data.user);
 
                 // Redirect based on user role

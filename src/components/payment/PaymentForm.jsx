@@ -2,7 +2,7 @@ import {useState, useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {FaArrowRight, FaCheckCircle, FaTimesCircle, FaSpinner} from 'react-icons/fa';
 import PaystackPop from '@paystack/inline-js'
-import { isAuthenticated, getUserData, getToken } from '../../utils/auth';
+import {  getUserData, getToken } from '../../utils/auth';
 
 const PaymentForm = () => {
   const [email, setEmail] = useState('');
@@ -21,8 +21,10 @@ const PaymentForm = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getToken()}`,
           },
+          credentials: 'include', // Include cookies in the request
+          mode: 'cors',
+
           body: JSON.stringify({
             planName: data.planName,
             status: 'pending'
@@ -45,11 +47,6 @@ const PaymentForm = () => {
         sessionStorage.removeItem('creatingSubscription');
       }
     };
-
-    if (!isAuthenticated()) {
-      navigate('/login', { state: { from: '/payment' } });
-      return;
-    }
 
     const userData = getUserData();
     if (!userData || userData.role !== 'client') {
@@ -111,11 +108,6 @@ const PaymentForm = () => {
   const handleSubmit = async(e) => {
     e.preventDefault();
     setError('');
-
-    if (!isAuthenticated()) {
-      navigate('/login', { state: { from: '/payment' } });
-      return;
-    }
 
     if (!email.trim()) {
       setError('Please enter a valid email.');

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getUserData, clearAuth } from '../../utils/auth';
 import { useNavigate } from 'react-router-dom';
-//import {Button} from "emoji-picker-react/src/components/atoms/Button.js";
 import { Eye, EyeOff } from "lucide-react"
 
 const ClientSettings = () => {

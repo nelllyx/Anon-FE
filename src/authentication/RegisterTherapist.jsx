@@ -80,7 +80,6 @@ const RegisterTherapist = () => {
   }, [therapist]);
 
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isValid) {
@@ -91,23 +90,37 @@ const RegisterTherapist = () => {
     // Proceed with registration logic
 
     try {
+
       const formData = new FormData();
 
-      Object.keys(therapist).forEach(key =>{
-        formData.append(key, therapist[key])
-      })
+      // Append all therapist data fields
+      Object.keys(therapist).forEach(key => {
+        if (therapist[key] !== '') { // Only send non-empty fields
+          formData.append(key, therapist[key]);
+        }
+      });
 
-      if(profileImage){
-        formData.append('profileImage', profileImage)
+      // Append profile image if selected
+      if (profileImage) {
+        formData.append('profilePicture', profileImage);
       }
 
-      const response = await fetch('http://localhost:3000/api/v1/therapist/registration', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(formData),
-      });
+      // Try FormData first, if it fails, try JSON
+      let response;
+      try {
+        response = await fetch('http://localhost:3000/api/v1/therapist/registration', {
+          method: 'POST',
+          body: formData,
+        });
+      } catch (formDataError) {
+        console.log('FormData failed, trying JSON...', formDataError);
+        // Fallback to JSON if FormData fails
+        response = await fetch('http://localhost:3000/api/v1/therapist/registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(therapist),
+        });
+      }
 
       if(response.ok){
         const data = await response.json();
@@ -214,6 +227,9 @@ const RegisterTherapist = () => {
                     </p>
                     <p className="text-xs text-gray-500">
                       Supported formats: JPEG, PNG. Max size: 5MB
+                    </p>
+                    <p className="text-xs text-blue-500 mt-1">
+                      Profile picture can be uploaded after registration
                     </p>
                   </div>
 

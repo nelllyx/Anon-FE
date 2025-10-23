@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
+import {clearAuth} from "../../utils/auth.js";
+import { useAuthenticatedFetch } from '../../utils/api';
+
 
 const PaymentHistory = () => {
   const [payments, setPayments] = useState([]);
@@ -11,19 +14,21 @@ const PaymentHistory = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const token = sessionStorage.getItem('token');
         const response = await fetch('http://localhost:3000/api/v1/client/payment-history', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
+          credentials: 'include',
+          mode: 'cors',
         });
 
         if (response.ok) {
           const data = await response.json();
           setPayments(data.data || []);
-        } else {
+        }else if(response.status === 401) clearAuth()
+
+          else {
           setError('Failed to fetch payment history');
         }
       } catch (error) {

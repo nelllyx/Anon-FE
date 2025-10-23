@@ -5,22 +5,28 @@ import {
   FaTrash, 
   FaCheck,
   FaUser, 
-  FaVideo, 
-  FaMapMarkerAlt,
+  // FaVideo,
+  // FaMapMarkerAlt,
   FaBook,
   FaRedo
 } from 'react-icons/fa';
 import { format, parseISO } from 'date-fns';
 import SetTimeModal from './SetTimeModal';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const SessionManagement = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState({
+    upcoming: [],
+    completed: [],
+    rescheduled: []
+  });
   const [filteredSessions, setFilteredSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showSetTimeModal, setShowSetTimeModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
+  const authenticatedFetch = useAuthenticatedFetch();
 
   const tabs = [
     { id: 'upcoming', label: 'Upcoming Sessions', icon: <FaCalendarAlt /> },
@@ -41,73 +47,59 @@ const SessionManagement = () => {
     setError('');
     
     try {
-      const token = sessionStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/v1/therapist/sessions', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/therapist/sessions/week');
 
       if (response.ok) {
         const data = await response.json();
-        setSessions(data.sessions || []);
+
+        // Map backend format to our component format
+        const mappedSessions = {
+          upcoming: data.data.upcoming.map(session => ({
+            id: session._id,
+            sessionDate: session.date,
+            clientName: session.userId?.username || 'Unknown Client',
+            therapyType: session.therapyType || 'video',
+            preferredTime: session.preferredTime || session.startTime,
+            scheduledTime: session.startTime,
+            status: 'upcoming',
+            notes: session.notes || ''
+          })),
+          completed: data.data.completed.map(session => ({
+            id: session._id,
+            sessionDate: session.date,
+            clientName: session.userId?.username || 'Unknown Client',
+            therapyType: session.therapyType || 'video',
+            preferredTime: session.preferredTime || session.startTime,
+            scheduledTime: session.startTime,
+            status: 'completed',
+            notes: session.notes || ''
+          })),
+          rescheduled: data.data.rescheduled.map(session => ({
+            id: session._id,
+            sessionDate: session.date,
+            clientName: session.userId?.username || 'Unknown Client',
+            therapyType: session.therapyType || 'video',
+            preferredTime: session.preferredTime || session.startTime,
+            scheduledTime: session.startTime,
+            status: 'rescheduled',
+            notes: session.notes || ''
+          }))
+        };
+
+        setSessions(mappedSessions);
       } else {
         throw new Error('Failed to fetch sessions');
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);
       setError('Failed to load sessions. Please try again.');
-      // Mock data for development
-      setSessions([
-        {
-          id: 1,
-          sessionDate: '2024-12-20',
-          clientName: 'Sarah Johnson',
-          therapyType: 'video',
-          preferredTime: '14:00',
-          scheduledTime: null,
-          status: 'upcoming',
-          notes: ''
-        },
-        {
-          id: 2,
-          sessionDate: '2024-12-21',
-          clientName: 'Michael Brown',
-          therapyType: 'in-person',
-          preferredTime: '10:30',
-          scheduledTime: '10:30',
-          status: 'upcoming',
-          notes: 'Follow-up session for anxiety management'
-        },
-        {
-          id: 3,
-          sessionDate: '2024-12-19',
-          clientName: 'Emily Davis',
-          therapyType: 'video',
-          preferredTime: '16:00',
-          scheduledTime: '16:00',
-          status: 'completed',
-          notes: 'Great progress with coping strategies'
-        },
-        {
-          id: 4,
-          sessionDate: '2024-12-18',
-          clientName: 'John Smith',
-          therapyType: 'in-person',
-          preferredTime: '11:00',
-          scheduledTime: '14:00',
-          status: 'rescheduled',
-          notes: 'Rescheduled due to client emergency'
-        }
-      ]);
     } finally {
       setLoading(false);
     }
   };
 
   const filterSessions = () => {
-    const filtered = sessions.filter(session => session.status === activeTab);
+    const filtered = sessions[activeTab] || [];
     setFilteredSessions(filtered);
   };
 
@@ -118,20 +110,24 @@ const SessionManagement = () => {
 
   const handleUpdateSession = async (sessionId, updates) => {
     try {
-      const token = sessionStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/v1/therapist/sessions/${sessionId}`, {
+      const response = await authenticatedFetch(`http://localhost:3000/api/v1/therapist/sessions/${sessionId}`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(updates)
       });
 
+      console.log(response)
+
       if (response.ok) {
-        setSessions(prev => prev.map(s => 
-          s.id === sessionId ? { ...s, ...updates } : s
-        ));
+        // Update the specific session in the correct category
+        setSessions(prev => {
+          const updated = { ...prev };
+          Object.keys(updated).forEach(category => {
+            updated[category] = updated[category].map(s => 
+              s.id === sessionId ? { ...s, ...updates } : s
+            );
+          });
+          return updated;
+        });
         setShowSetTimeModal(false);
       } else {
         throw new Error('Failed to update session');
@@ -145,17 +141,19 @@ const SessionManagement = () => {
   const handleDeleteSession = async (sessionId) => {
     if (window.confirm('Are you sure you want to delete this session?')) {
       try {
-        const token = sessionStorage.getItem('token');
-        const response = await fetch(`http://localhost:3000/api/v1/therapist/sessions/${sessionId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const response = await authenticatedFetch(`http://localhost:3000/api/v1/therapist/sessions/${sessionId}`, {
+          method: 'DELETE'
         });
 
         if (response.ok) {
-          setSessions(prev => prev.filter(s => s.id !== sessionId));
+          // Remove session from all categories
+          setSessions(prev => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach(category => {
+              updated[category] = updated[category].filter(s => s.id !== sessionId);
+            });
+            return updated;
+          });
         } else {
           throw new Error('Failed to delete session');
         }
@@ -168,20 +166,33 @@ const SessionManagement = () => {
 
   const updateSessionStatus = async (sessionId, newStatus) => {
     try {
-      const token = sessionStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/v1/therapist/sessions/${sessionId}/status`, {
+      const response = await authenticatedFetch(`http://localhost:3000/api/v1/therapist/sessions/${sessionId}/status`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ status: newStatus })
       });
 
       if (response.ok) {
-        setSessions(prev => prev.map(s => 
-          s.id === sessionId ? { ...s, status: newStatus } : s
-        ));
+        // Move session between categories based on new status
+        setSessions(prev => {
+          const updated = { ...prev };
+          let sessionToMove = null;
+          
+          // Find and remove session from current category
+          Object.keys(updated).forEach(category => {
+            const sessionIndex = updated[category].findIndex(s => s.id === sessionId);
+            if (sessionIndex !== -1) {
+              sessionToMove = { ...updated[category][sessionIndex], status: newStatus };
+              updated[category].splice(sessionIndex, 1);
+            }
+          });
+          
+          // Add to new category
+          if (sessionToMove) {
+            updated[newStatus] = [...(updated[newStatus] || []), sessionToMove];
+          }
+          
+          return updated;
+        });
       } else {
         throw new Error('Failed to update session status');
       }
@@ -211,13 +222,13 @@ const SessionManagement = () => {
     }
   };
 
-  const getTherapyTypeIcon = (type) => {
-    return type === 'video' ? <FaVideo className="text-blue-500" /> : <FaMapMarkerAlt className="text-green-500" />;
-  };
-
-  const getTherapyTypeLabel = (type) => {
-    return type === 'video' ? 'Video Call' : 'In-Person';
-  };
+  // const getTherapyTypeIcon = (type) => {
+  //   return type === 'video' ? <FaVideo className="text-blue-500" /> : <FaMapMarkerAlt className="text-green-500" />;
+  // };
+  //
+  // const getTherapyTypeLabel = (type) => {
+  //   return type === 'video' ? 'Video Call' : 'In-Person';
+  // };
 
   if (loading) {
     return (
@@ -248,17 +259,16 @@ const SessionManagement = () => {
             <div className="text-center">
               <p className="text-xs text-gray-500">Today&#39;s Sessions</p>
               <p className="text-lg font-semibold text-blue-600">
-                {sessions.filter(s => 
-                  s.status === 'upcoming' && 
+                {sessions.upcoming?.filter(s => 
                   new Date(s.sessionDate).toDateString() === new Date().toDateString()
-                ).length}
+                ).length || 0}
               </p>
             </div>
             <div className="h-8 w-px bg-gray-300"></div>
             <div className="text-center">
               <p className="text-xs text-gray-500">This Week</p>
               <p className="text-lg font-semibold text-blue-600">
-                {sessions.filter(s => s.status === 'upcoming').length}
+                {sessions.upcoming?.length || 0}
               </p>
             </div>
           </div>
@@ -293,7 +303,7 @@ const SessionManagement = () => {
                 <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
                   activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
                 }`}>
-                  {sessions.filter(s => s.status === tab.id).length}
+                  {sessions[tab.id]?.length || 0}
                 </span>
               </button>
             ))}
@@ -353,8 +363,9 @@ const SessionManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center gap-2">
-                        {getTherapyTypeIcon(session.therapyType)}
-                        {getTherapyTypeLabel(session.therapyType)}
+                        {session.therapyType}
+                        {/*{getTherapyTypeIcon(session.therapyType)}*/}
+                        {/*{getTherapyTypeLabel(session.therapyType)}*/}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
