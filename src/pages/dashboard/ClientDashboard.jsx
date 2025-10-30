@@ -4,6 +4,9 @@ import SideBar from '../../component/siderbar/SideBar';
 import SessionCard from '../../component/sessionCard/SessionCard';
 import { FaCalendarAlt, FaHeart, FaBook, FaBell, FaBars, FaUserPlus, FaClipboardList, FaLightbulb, FaClock, FaCheckCircle } from 'react-icons/fa';
 import { getUserData } from '../../utils/auth';
+import { useWebSocket } from '../../contexts/WebSocketContext';
+import NotificationToast from '../../components/notifications/NotificationToast';
+import NotificationPanel from '../../components/notifications/NotificationPanel';
 
 // Default content for when no sessions are available
 const defaultContent = {
@@ -57,6 +60,19 @@ const ClientDashboard = () => {
   });
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState('');
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [activeToast, setActiveToast] = useState(null);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useWebSocket();
+
+  // Toast rendering on new notification
+  useEffect(() => {
+    if (notifications.length > 0 && notifications[0].unread) {
+      setActiveToast(notifications[0]);
+    }
+  }, [notifications]);
+
+  const handleToastClose = () => setActiveToast(null);
+  const handleToastRead = (id) => { markAsRead(id); setActiveToast(null); };
 
   useEffect(() => {
     // Get user data from localStorage
@@ -267,8 +283,19 @@ const ClientDashboard = () => {
 
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <FaBell className="text-base text-gray-500 cursor-pointer hover:text-blue-500 transition-colors" />
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center">3</span>
+                  <FaBell className="text-base text-gray-500 cursor-pointer hover:text-blue-500 transition-colors" onClick={() => setIsNotificationPanelOpen(true)} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{unreadCount}</span>
+                  )}
+                  <NotificationPanel
+                    isOpen={isNotificationPanelOpen}
+                    onClose={() => setIsNotificationPanelOpen(false)}
+                    notifications={notifications}
+                    unreadCount={unreadCount}
+                    onMarkAsRead={markAsRead}
+                    onMarkAllAsRead={markAllAsRead}
+                    onClearAll={clearNotifications}
+                  />
                 </div>
                 <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm">
                   {user.image ? (
@@ -426,6 +453,13 @@ const ClientDashboard = () => {
                   )}
                 </div>
             )}
+            {activeToast && (
+  <NotificationToast 
+    notification={activeToast}
+    onClose={handleToastClose}
+    onMarkAsRead={handleToastRead}
+  />
+)}
           </div>
         </div>
       </div>

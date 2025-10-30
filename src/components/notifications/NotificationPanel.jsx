@@ -39,6 +39,10 @@ const NotificationPanel = ({
         return <FaExclamationTriangle className="text-red-500" />;
       case 'session_update':
         return <FaInfoCircle className="text-blue-500" />;
+      case 'therapist_assigned':
+        return <FaInfoCircle className="text-indigo-500" />;
+      case 'client_payment':
+        return <FaCheck className="text-green-600" />;
       default:
         return <FaBell className="text-gray-500" />;
     }
@@ -131,6 +135,26 @@ const NotificationPanel = ({
                 }`}
               >
                 Rescheduled
+              </button>
+              <button
+                onClick={() => setFilter('therapist_assigned')}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                  filter === 'therapist_assigned' 
+                    ? 'bg-indigo-100 text-indigo-700' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Therapist
+              </button>
+              <button
+                onClick={() => setFilter('client_payment')}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                  filter === 'client_payment' 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Payment
               </button>
             </div>
           </div>

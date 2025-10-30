@@ -153,6 +153,17 @@ export const WebSocketProvider = ({ children }) => {
         handleWebSocketMessage({ type: 'session_cancelled', ...data });
       });
 
+      // Listen for therapist assigned notification events
+      newSocket.on('therapist_assigned', (data) => {
+        console.log('Socket.IO therapist assigned received:', data);
+        handleWebSocketMessage({ type: 'therapist_assigned', ...data });
+      });
+      // Listen for client payment notification events
+      newSocket.on('client_payment', (data) => {
+        console.log('Socket.IO client payment received:', data);
+        handleWebSocketMessage({ type: 'client_payment', ...data });
+      });
+
       setSocket(newSocket);
     } catch (error) {
       console.error('Error creating Socket.IO connection:', error);
@@ -234,6 +245,29 @@ export const WebSocketProvider = ({ children }) => {
           type: 'session_cancelled',
           title: 'Session Cancelled',
           message: data.message || 'A session has been cancelled',
+          timestamp: new Date(),
+          data: data.data,
+          unread: true
+        });
+        break;
+      
+      case 'therapist_assigned':
+        addNotification({
+          id: Date.now() + Math.random(),
+          type: 'therapist_assigned',
+          title: 'Therapist Assigned',
+          message: data.message || 'A therapist has been assigned to your account.',
+          timestamp: new Date(),
+          data: data.data,
+          unread: true
+        });
+        break;
+      case 'client_payment':
+        addNotification({
+          id: Date.now() + Math.random(),
+          type: 'client_payment',
+          title: 'Payment Received',
+          message: data.message || 'Your payment was successful!',
           timestamp: new Date(),
           data: data.data,
           unread: true

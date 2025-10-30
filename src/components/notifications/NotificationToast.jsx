@@ -54,6 +54,10 @@ const NotificationToast = ({ notification, onClose, onMarkAsRead }) => {
         return <FaExclamationTriangle className="text-red-500" />;
       case 'session_update':
         return <FaInfoCircle className="text-blue-500" />;
+      case 'therapist_assigned':
+        return <FaInfoCircle className="text-indigo-500" />;
+      case 'client_payment':
+        return <FaCheckCircle className="text-green-600" />;
       default:
         return <FaBell className="text-gray-500" />;
     }
@@ -71,6 +75,10 @@ const NotificationToast = ({ notification, onClose, onMarkAsRead }) => {
         return 'border-l-red-500 bg-red-50';
       case 'session_update':
         return 'border-l-blue-500 bg-blue-50';
+      case 'therapist_assigned':
+        return 'border-l-indigo-500 bg-indigo-50';
+      case 'client_payment':
+        return 'border-l-green-600 bg-green-50';
       default:
         return 'border-l-gray-500 bg-gray-50';
     }
