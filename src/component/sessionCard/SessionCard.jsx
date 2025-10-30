@@ -1,6 +1,6 @@
 import { FaCalendarAlt, FaClock, FaUserMd, FaVideo, FaUser, FaStickyNote } from 'react-icons/fa';
 
-const SessionCard = ({ therapist, date, time, status, client, clientImage, duration, type, notes, isTherapist }) => {
+const SessionCard = ({ therapist, date, time, status, client, clientImage, duration, type, notes }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'upcoming':
@@ -25,6 +25,16 @@ const SessionCard = ({ therapist, date, time, status, client, clientImage, durat
     }
   };
 
+  // Format time with TBD default
+  const formatTime = (time) => {
+    return time || 'TBD';
+  };
+
+  // Format duration with TBD default
+  const formatDuration = (duration) => {
+    return duration || 'TBD';
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
       <div className="flex items-center justify-between mb-3 md:mb-4">
@@ -43,16 +53,16 @@ const SessionCard = ({ therapist, date, time, status, client, clientImage, durat
         <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden">
           <img 
             src={clientImage} 
-            alt={isTherapist ? client : therapist}
+            alt={client}
             className="w-full h-full object-cover"
           />
         </div>
         <div>
           <h3 className="font-medium text-gray-800 text-sm md:text-base">
-            {isTherapist ? client : therapist}
+            {client}
           </h3>
           <p className="text-xs md:text-sm text-gray-500">
-            {isTherapist ? 'Client' : 'Therapist'}
+          Therapist
           </p>
         </div>
       </div>
@@ -83,15 +93,25 @@ const SessionCard = ({ therapist, date, time, status, client, clientImage, durat
             <FaClock className="text-gray-500 text-sm md:text-base" />
           </div>
           <div>
-            <p className="text-xs md:text-sm text-gray-500">Time & Duration</p>
-            <p className="font-medium text-gray-800 text-sm md:text-base">{time} • {duration}</p>
+            <p className="text-xs md:text-sm text-gray-500">Time</p>
+            <p className="font-medium text-gray-800 text-sm md:text-base">{formatTime(time)}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="p-2 bg-gray-50 rounded-lg">
+            <FaClock className="text-gray-500 text-sm md:text-base" />
+          </div>
+          <div>
+            <p className="text-xs md:text-sm text-gray-500">Duration</p>
+            <p className="font-medium text-gray-800 text-sm md:text-base">{formatDuration(duration)}</p>
           </div>
         </div>
       </div>
 
       <div className="mt-4 md:mt-6 flex gap-2 md:gap-3">
         <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 md:px-4 rounded-lg transition-colors text-sm md:text-base">
-          {isTherapist ? 'Start Session' : 'Join Session'}
+          Join Session
         </button>
         <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-3 md:px-4 rounded-lg transition-colors text-sm md:text-base">
           Reschedule

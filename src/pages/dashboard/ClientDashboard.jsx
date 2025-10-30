@@ -186,7 +186,7 @@ const ClientDashboard = () => {
         title: "Next Session",
         value: stats.nextSession ? formatDate(stats.nextSession.date) : "None",
         icon: <FaCalendarAlt className="text-blue-500" />,
-        change: stats.nextSession ? formatTime(stats.nextSession.time) : "No upcoming",
+        change: stats.nextSession ? formatTime(stats.nextSession.scheduledTime) : "No upcoming",
         color: "from-blue-50 to-blue-100",
         trend: "up"
       },
@@ -340,13 +340,13 @@ const ClientDashboard = () => {
                                 key={index}
                                 therapist={`${session.therapistId.firstName} ${session.therapistId.lastName}`}
                                 date={format(parseISO(session.date), 'do MMMM, yyyy')}
-                                time={session.startTime}
+                                time={session.scheduledTime}
                                 status={session.status}
+                                client={`${session.therapistId.firstName} ${session.therapistId.lastName}`}
                                 clientImage={session.therapistId.profile.avatar}
                                 duration={session.duration}
                                 type={session.therapyType}
                                 notes={session.notes}
-                                isTherapist={false}
                             />
                         ))}
                       </div>

@@ -8,11 +8,14 @@ import {
   // FaVideo,
   // FaMapMarkerAlt,
   FaBook,
-  FaRedo
+  FaRedo,
+  FaArrowLeft
 } from 'react-icons/fa';
 import { format, parseISO } from 'date-fns';
 import SetTimeModal from './SetTimeModal';
 import { useAuthenticatedFetch } from '../../utils/api';
+import { useWebSocket } from '../../contexts/WebSocketContext';
+import NotificationToast from '../notifications/NotificationToast';
 
 const SessionManagement = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -26,9 +29,12 @@ const SessionManagement = () => {
   const [error, setError] = useState('');
   const [showSetTimeModal, setShowSetTimeModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
+  const [toastNotifications, setToastNotifications] = useState([]);
   const authenticatedFetch = useAuthenticatedFetch();
+  const { sendMessage, notifications } = useWebSocket();
 
   const tabs = [
+    { id: 'today', label: 'Today\'s Sessions', icon: <FaCalendarAlt /> },
     { id: 'upcoming', label: 'Upcoming Sessions', icon: <FaCalendarAlt /> },
     { id: 'completed', label: 'Completed Sessions', icon: <FaCheck /> },
     { id: 'rescheduled', label: 'Rescheduled Sessions', icon: <FaRedo /> }
@@ -60,7 +66,7 @@ const SessionManagement = () => {
             clientName: session.userId?.username || 'Unknown Client',
             therapyType: session.therapyType || 'video',
             preferredTime: session.preferredTime || session.startTime,
-            scheduledTime: session.startTime,
+            scheduledTime: session.scheduledTime,
             status: 'upcoming',
             notes: session.notes || ''
           })),
@@ -99,8 +105,24 @@ const SessionManagement = () => {
   };
 
   const filterSessions = () => {
-    const filtered = sessions[activeTab] || [];
-    setFilteredSessions(filtered);
+    if (activeTab === 'today') {
+      // Filter sessions for today's date
+      const today = new Date().toDateString();
+      const todaySessions = sessions.upcoming?.filter(session => 
+        new Date(session.sessionDate).toDateString() === today
+      ) || [];
+      setFilteredSessions(todaySessions);
+    } else if (activeTab === 'upcoming') {
+      // Filter upcoming sessions but exclude today's sessions
+      const today = new Date().toDateString();
+      const upcomingSessions = sessions.upcoming?.filter(session => 
+        new Date(session.sessionDate).toDateString() !== today
+      ) || [];
+      setFilteredSessions(upcomingSessions);
+    } else {
+      const filtered = sessions[activeTab] || [];
+      setFilteredSessions(filtered);
+    }
   };
 
   const handleSetTime = (session) => {
@@ -115,7 +137,6 @@ const SessionManagement = () => {
         body: JSON.stringify(updates)
       });
 
-      console.log(response)
 
       if (response.ok) {
         // Update the specific session in the correct category
@@ -129,6 +150,23 @@ const SessionManagement = () => {
           return updated;
         });
         setShowSetTimeModal(false);
+
+        // Send WebSocket notification
+        const session = sessions.upcoming.find(s => s.id === sessionId) || 
+                       sessions.completed.find(s => s.id === sessionId) || 
+                       sessions.rescheduled.find(s => s.id === sessionId);
+        
+        if (session) {
+          sendMessage({
+            type: 'session_update',
+            message: `Session time has been set for ${session.clientName}`,
+            data: {
+              sessionId,
+              clientName: session.clientName,
+              updates
+            }
+          });
+        }
       } else {
         throw new Error('Failed to update session');
       }
@@ -172,6 +210,17 @@ const SessionManagement = () => {
       });
 
       if (response.ok) {
+        console.log(response)
+        
+        // Find the session before moving it
+        let sessionToMove = null;
+        Object.keys(sessions).forEach(category => {
+          const session = sessions[category].find(s => s.id === sessionId);
+          if (session) {
+            sessionToMove = session;
+          }
+        });
+
         // Move session between categories based on new status
         setSessions(prev => {
           const updated = { ...prev };
@@ -193,6 +242,37 @@ const SessionManagement = () => {
           
           return updated;
         });
+
+        // Send WebSocket notification based on status change
+        if (sessionToMove) {
+          let notificationType = 'session_update';
+          let message = `Session status updated for ${sessionToMove.clientName}`;
+
+          switch (newStatus) {
+            case 'completed':
+              notificationType = 'session_completed';
+              message = `Session completed for ${sessionToMove.clientName}`;
+              break;
+            case 'rescheduled':
+              notificationType = 'session_rescheduled';
+              message = `Session rescheduled for ${sessionToMove.clientName}`;
+              break;
+            case 'cancelled':
+              notificationType = 'session_cancelled';
+              message = `Session cancelled for ${sessionToMove.clientName}`;
+              break;
+          }
+
+          sendMessage({
+            type: notificationType,
+            message,
+            data: {
+              sessionId,
+              clientName: sessionToMove.clientName,
+              status: newStatus
+            }
+          });
+        }
       } else {
         throw new Error('Failed to update session status');
       }
@@ -240,11 +320,32 @@ const SessionManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Toast Notifications */}
+      {toastNotifications.map((notification) => (
+        <NotificationToast
+          key={notification.id}
+          notification={notification}
+          onClose={(id) => setToastNotifications(prev => prev.filter(n => n.id !== id))}
+          onMarkAsRead={(id) => {
+            setToastNotifications(prev => 
+              prev.map(n => n.id === id ? { ...n, unread: false } : n)
+            );
+          }}
+        />
+      ))}
       {/* Header */}
       <div className="mb-8 bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div className="mb-4 md:mb-0">
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.history.back()}
+                className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Go back to dashboard"
+              >
+                <FaArrowLeft className="text-sm" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
               <div className="bg-blue-100 rounded-lg p-3">
                 <FaCalendarAlt className="text-2xl text-blue-600" />
               </div>
@@ -303,7 +404,16 @@ const SessionManagement = () => {
                 <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
                   activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
                 }`}>
-                  {sessions[tab.id]?.length || 0}
+                  {tab.id === 'today' 
+                    ? sessions.upcoming?.filter(s => 
+                        new Date(s.sessionDate).toDateString() === new Date().toDateString()
+                      ).length || 0
+                    : tab.id === 'upcoming'
+                    ? sessions.upcoming?.filter(s => 
+                        new Date(s.sessionDate).toDateString() !== new Date().toDateString()
+                      ).length || 0
+                    : sessions[tab.id]?.length || 0
+                  }
                 </span>
               </button>
             ))}
@@ -330,7 +440,7 @@ const SessionManagement = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Preferred Time
                   </th>
-                  {activeTab === 'upcoming' && (
+                  {(activeTab === 'upcoming' || activeTab === 'today') && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Scheduled Time
                     </th>
@@ -374,7 +484,7 @@ const SessionManagement = () => {
                         {formatTime(session.preferredTime)}
                       </div>
                     </td>
-                    {activeTab === 'upcoming' && (
+                    {(activeTab === 'upcoming' || activeTab === 'today') && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {session.scheduledTime ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -396,7 +506,7 @@ const SessionManagement = () => {
                     )}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        {activeTab === 'upcoming' && (
+                        {(activeTab === 'upcoming' || activeTab === 'today') && (
                           <>
                             <button
                               onClick={() => handleSetTime(session)}
