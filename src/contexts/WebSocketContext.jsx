@@ -97,6 +97,16 @@ export const WebSocketProvider = ({ children }) => {
         console.log('🔗 Socket ID:', newSocket.id);
         setIsConnected(true);
         reconnectAttempts.current = 0;
+
+        newSocket.emit("join_role_notifications", (response) => {
+          if (response.success) {
+            console.log("✅ Joined notification room:", response.roomId);
+          } else {
+            console.error("❌ Failed to join notification room:", response.error);
+          }
+        });
+
+
       });
 
       newSocket.on('disconnect', (reason) => {
@@ -122,7 +132,13 @@ export const WebSocketProvider = ({ children }) => {
       });
 
       // Listen for notification events
-      newSocket.on('notification', (data) => {
+
+      newSocket.on("connected", (data) => {
+        console.log("✅ Notification connection success:", data);
+      });
+
+
+      newSocket.on('notifications', (data) => {
         console.log('New notification received:', data);
         handleWebSocketMessage(data);
       });
