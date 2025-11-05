@@ -618,6 +618,7 @@ const TherapistDashboard = () => {
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
         onClearAll={clearNotifications}
+        mode="popover"
       />
     </div>
   );

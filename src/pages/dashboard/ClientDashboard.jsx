@@ -124,8 +124,6 @@ const ClientDashboard = () => {
         setSessions(sessionsData.data.Sessions || []);
 
 
-        console.log(sessionsData.data.Sessions[0]?.therapistId?.profile?.avatar)
-
         // Calculate stats from sessions
         const upcomingSessions = sessionsData.data.Sessions?.filter(s => s.status === 'upcoming') || [];
         const completedSessions = sessionsData.data.Sessions?.filter(s => s.status === 'completed') || [];
@@ -295,6 +293,7 @@ const ClientDashboard = () => {
                     onMarkAsRead={markAsRead}
                     onMarkAllAsRead={markAllAsRead}
                     onClearAll={clearNotifications}
+                    mode="popover"
                   />
                 </div>
                 <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm">

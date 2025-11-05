@@ -21,12 +21,28 @@ export const WebSocketProvider = ({ children }) => {
   const maxReconnectAttempts = 5;
 
   useEffect(() => {
+    // Rehydrate notifications from localStorage on mount
+    try {
+      const storedNotifications = localStorage.getItem('anon_notifications');
+      const storedUnread = localStorage.getItem('anon_unread_count');
+      if (storedNotifications) {
+        const parsed = JSON.parse(storedNotifications);
+        setNotifications(Array.isArray(parsed) ? parsed : []);
+      }
+      if (storedUnread) {
+        const parsedUnread = parseInt(storedUnread, 10);
+        setUnreadCount(Number.isNaN(parsedUnread) ? 0 : parsedUnread);
+      }
+    } catch (e) {
+      console.warn('Failed to rehydrate notifications from storage:', e);
+    }
+
     const initializeConnection = async () => {
       await connectWebSocket();
     };
-    
+
     initializeConnection();
-    
+
     return () => {
       if (socket) {
         socket.disconnect();
@@ -36,6 +52,16 @@ export const WebSocketProvider = ({ children }) => {
       }
     };
   }, []);
+
+  // Persist notifications and counts to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('anon_notifications', JSON.stringify(notifications));
+      localStorage.setItem('anon_unread_count', String(unreadCount));
+    } catch (e) {
+      // ignore quota errors
+    }
+  }, [notifications, unreadCount]);
 
   const connectWebSocket = async () => {
     try {
@@ -138,47 +164,22 @@ export const WebSocketProvider = ({ children }) => {
       });
 
 
-      newSocket.on('notifications', (data) => {
+      newSocket.on('notification', (data) => {
         console.log('New notification received:', data);
         handleWebSocketMessage(data);
       });
 
-      // Listen for session update events
-      newSocket.on('session_update', (data) => {
-        console.log('Socket.IO session update received:', data);
-        handleWebSocketMessage({ type: 'session_update', ...data });
+      // Debug: log all incoming events to help diagnose mismatched event names
+      newSocket.onAny((eventName, ...args) => {
+        try {
+          const payload = args && args.length > 0 ? args[0] : undefined;
+          console.log('📨 Socket event:', eventName, payload);
+        } catch (_) {
+          console.log('📨 Socket event:', eventName);
+        }
       });
 
-      newSocket.on('session_time_set', (data) => {
-        console.log('Socket.IO session time set received:', data);
-        handleWebSocketMessage({ type: 'session_time_set', ...data });
-      });
 
-      newSocket.on('session_rescheduled', (data) => {
-        console.log('Socket.IO session rescheduled received:', data);
-        handleWebSocketMessage({ type: 'session_rescheduled', ...data });
-      });
-
-      newSocket.on('session_completed', (data) => {
-        console.log('Socket.IO session completed received:', data);
-        handleWebSocketMessage({ type: 'session_completed', ...data });
-      });
-
-      newSocket.on('session_cancelled', (data) => {
-        console.log('Socket.IO session cancelled received:', data);
-        handleWebSocketMessage({ type: 'session_cancelled', ...data });
-      });
-
-      // Listen for therapist assigned notification events
-      newSocket.on('therapist_assigned', (data) => {
-        console.log('Socket.IO therapist assigned received:', data);
-        handleWebSocketMessage({ type: 'therapist_assigned', ...data });
-      });
-      // Listen for client payment notification events
-      newSocket.on('client_payment', (data) => {
-        console.log('Socket.IO client payment received:', data);
-        handleWebSocketMessage({ type: 'client_payment', ...data });
-      });
 
       setSocket(newSocket);
     } catch (error) {
@@ -278,7 +279,7 @@ export const WebSocketProvider = ({ children }) => {
           unread: true
         });
         break;
-      case 'client_payment':
+      case 'payment':
         addNotification({
           id: Date.now() + Math.random(),
           type: 'client_payment',
@@ -291,7 +292,7 @@ export const WebSocketProvider = ({ children }) => {
         break;
       
       default:
-        console.log('Unknown WebSocket message type:', data.type);
+        console.log('Unknown WebSocket message type:', type, data);
     }
   };
 

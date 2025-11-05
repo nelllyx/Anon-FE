@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import atpng from "../../assets/atpng.png";
-import { FaBars, FaTimes, FaChevronDown } from 'react-icons/fa';
+import { FaBars, FaTimes, FaChevronDown, FaBell } from 'react-icons/fa';
+import { useWebSocket } from '../../contexts/WebSocketContext';
+import NotificationPanel from '../../components/notifications/NotificationPanel';
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useWebSocket();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -46,8 +50,20 @@ const NavBar = () => {
             </Link>
           </div>
 
-          {/* Sign Up Dropdown */}
-          <div className="hidden md:block relative">
+          {/* Notifications + Sign Up */}
+          <div className="hidden md:flex items-center gap-4 relative">
+            <div className="relative">
+              <FaBell
+                className="text-gray-600 hover:text-blue-600 cursor-pointer"
+                onClick={() => setIsNotificationPanelOpen(true)}
+                aria-label="Open notifications"
+              />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
             <button
               onClick={toggleSignup}
               className="ml-8 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
@@ -160,6 +176,18 @@ const NavBar = () => {
           </div>
         </div>
       )}
+      
+      {/* Notification Panel - rendered outside relative container for proper fixed positioning */}
+      <NotificationPanel
+        isOpen={isNotificationPanelOpen}
+        onClose={() => setIsNotificationPanelOpen(false)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
+        onClearAll={clearNotifications}
+        mode="popover"
+      />
     </nav>
   );
 };
