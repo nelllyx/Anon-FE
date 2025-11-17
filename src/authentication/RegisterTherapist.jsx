@@ -102,7 +102,7 @@ const RegisterTherapist = () => {
 
       // Append profile image if selected
       if (profileImage) {
-        formData.append('profilePicture', profileImage);
+        formData.append('avatar', profileImage);
       }
 
       // Try FormData first, if it fails, try JSON

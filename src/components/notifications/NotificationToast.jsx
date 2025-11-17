@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
-import { 
-  FaTimes, 
-  FaCheckCircle, 
-  FaClock, 
-  FaCalendarAlt, 
+import {
+  FaTimes,
+  FaCheckCircle,
+  FaClock,
+  FaCalendarAlt,
   FaExclamationTriangle,
   FaInfoCircle,
   FaBell
@@ -16,7 +17,7 @@ const NotificationToast = ({ notification, onClose, onMarkAsRead }) => {
   useEffect(() => {
     // Show notification with a slight delay for smooth animation
     const showTimer = setTimeout(() => setIsVisible(true), 100);
-    
+
     // Auto-hide after 5 seconds
     const hideTimer = setTimeout(() => {
       handleClose();
@@ -88,7 +89,7 @@ const NotificationToast = ({ notification, onClose, onMarkAsRead }) => {
     const now = new Date();
     const time = new Date(timestamp);
     const diffInMinutes = Math.floor((now - time) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -96,62 +97,62 @@ const NotificationToast = ({ notification, onClose, onMarkAsRead }) => {
   };
 
   return (
-    <div
-      className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ease-in-out ${
-        isVisible && !isLeaving 
-          ? 'translate-x-0 opacity-100' 
-          : 'translate-x-full opacity-0'
-      }`}
-    >
       <div
-        className={`relative p-4 rounded-lg shadow-lg border-l-4 ${getNotificationColor()} ${
-          notification.unread ? 'ring-2 ring-blue-200' : ''
-        }`}
+          className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ease-in-out ${
+              isVisible && !isLeaving
+                  ? 'translate-x-0 opacity-100'
+                  : 'translate-x-full opacity-0'
+          }`}
       >
-        <button
-          onClick={handleClose}
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
+        <div
+            className={`relative p-4 rounded-lg shadow-lg border-l-4 ${getNotificationColor()} ${
+                notification.unread ? 'ring-2 ring-blue-200' : ''
+            }`}
         >
-          <FaTimes className="text-sm" />
-        </button>
+          <button
+              onClick={handleClose}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <FaTimes className="text-sm" />
+          </button>
 
-        <div 
-          className="flex items-start gap-3 cursor-pointer"
-          onClick={handleClick}
-        >
-          <div className="flex-shrink-0 mt-1">
-            {getNotificationIcon()}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-gray-800 truncate">
-                {notification.title}
-              </h4>
-              {notification.unread && (
-                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2"></div>
-              )}
+          <div
+              className="flex items-start gap-3 cursor-pointer"
+              onClick={handleClick}
+          >
+            <div className="flex-shrink-0 mt-1">
+              {getNotificationIcon()}
             </div>
-            
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-              {notification.message}
-            </p>
-            
-            <div className="flex items-center justify-between mt-2">
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-800 truncate">
+                  {notification.title}
+                </h4>
+                {notification.unread && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2"></div>
+                )}
+              </div>
+
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                {notification.message}
+              </p>
+
+              <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-gray-500">
                 {formatTime(notification.timestamp)}
               </span>
-              
-              {notification.data?.clientName && (
-                <span className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">
+
+                {notification.data?.clientName && (
+                    <span className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">
                   {notification.data.clientName}
                 </span>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

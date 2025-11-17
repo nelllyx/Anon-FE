@@ -38,6 +38,8 @@ export const WebSocketProvider = ({ children }) => {
     }
 
     const initializeConnection = async () => {
+      // Fetch missed notifications from backend first
+      await fetchMissedNotifications();
       await connectWebSocket();
     };
 
@@ -210,84 +212,91 @@ export const WebSocketProvider = ({ children }) => {
     switch (data.type) {
       case 'session_update':
         addNotification({
-          id: Date.now() + Math.random(),
+          id: data.id || data.notificationId || Date.now() + Math.random(),
           type: 'session_update',
           title: 'Session Updated',
           message: data.message || 'A session has been updated',
-          timestamp: new Date(),
+          timestamp: data.timestamp || new Date(),
           data: data.data,
-          unread: true
+          unread: true,
+          isRead: false
         });
         break;
       
       case 'session_time_set':
         addNotification({
-          id: Date.now() + Math.random(),
+          id: data.id || data.notificationId || Date.now() + Math.random(),
           type: 'session_time_set',
           title: 'Session Time Set',
           message: data.message || 'Session time has been scheduled',
-          timestamp: new Date(),
+          timestamp: data.timestamp || new Date(),
           data: data.data,
-          unread: true
+          unread: true,
+          isRead: false
         });
         break;
       
       case 'session_rescheduled':
         addNotification({
-          id: Date.now() + Math.random(),
+          id: data.id || data.notificationId || Date.now() + Math.random(),
           type: 'session_rescheduled',
           title: 'Session Rescheduled',
           message: data.message || 'A session has been rescheduled',
-          timestamp: new Date(),
+          timestamp: data.timestamp || new Date(),
           data: data.data,
-          unread: true
+          unread: true,
+          isRead: false
         });
         break;
       
       case 'session_completed':
         addNotification({
-          id: Date.now() + Math.random(),
+          id: data.id || data.notificationId || Date.now() + Math.random(),
           type: 'session_completed',
           title: 'Session Completed',
           message: data.message || 'A session has been completed',
-          timestamp: new Date(),
+          timestamp: data.timestamp || new Date(),
           data: data.data,
-          unread: true
+          unread: true,
+          isRead: false
         });
         break;
       
       case 'session_cancelled':
         addNotification({
-          id: Date.now() + Math.random(),
+          id: data.id || data.notificationId || Date.now() + Math.random(),
           type: 'session_cancelled',
           title: 'Session Cancelled',
           message: data.message || 'A session has been cancelled',
-          timestamp: new Date(),
+          timestamp: data.timestamp || new Date(),
           data: data.data,
-          unread: true
+          unread: true,
+          isRead: false
         });
         break;
       
       case 'therapist_assigned':
         addNotification({
-          id: Date.now() + Math.random(),
+          id: data.id || data.notificationId || Date.now() + Math.random(),
           type: 'therapist_assigned',
           title: 'Therapist Assigned',
           message: data.message || 'A therapist has been assigned to your account.',
-          timestamp: new Date(),
+          timestamp: data.timestamp || new Date(),
           data: data.data,
-          unread: true
+          unread: true,
+          isRead: false
         });
         break;
       case 'payment':
         addNotification({
-          id: Date.now() + Math.random(),
+          id: data.id || data.notificationId || Date.now() + Math.random(),
           type: 'client_payment',
           title: 'Payment Received',
           message: data.message || 'Your payment was successful!',
-          timestamp: new Date(),
+          timestamp: data.timestamp || new Date(),
           data: data.data,
-          unread: true
+          unread: true,
+          isRead: false
         });
         break;
       
@@ -297,26 +306,138 @@ export const WebSocketProvider = ({ children }) => {
   };
 
   const addNotification = (notification) => {
-    setNotifications(prev => [notification, ...prev.slice(0, 49)]); // Keep last 50 notifications
+    const newNotification = {
+      ...notification,
+      isRead: false,
+      unread: true
+    };
+    setNotifications(prev => [newNotification, ...prev.slice(0, 49)]); // Keep last 50 notifications
     setUnreadCount(prev => prev + 1);
   };
 
-  const markAsRead = (notificationId) => {
+  // Fetch missed notifications from backend
+  const fetchMissedNotifications = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/notifications', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const backendNotifications = data.notifications || data.data || [];
+        
+        // Merge with existing notifications, avoiding duplicates
+        setNotifications(prev => {
+          const existingIds = new Set(prev.map(n => n.id || n._id));
+          const newNotifications = backendNotifications
+            .filter(n => !existingIds.has(n.id || n._id))
+            .map(n => ({
+              id: n.id || n._id,
+              type: n.type,
+              title: n.title,
+              message: n.message,
+              timestamp: n.timestamp || n.createdAt,
+              data: n.data,
+              unread: !n.isRead,
+              isRead: n.isRead || false
+            }));
+          
+          return [...newNotifications, ...prev].slice(0, 50); // Keep last 50
+        });
+
+        // Update unread count
+        const unreadNotifications = backendNotifications.filter(n => !n.isRead);
+        setUnreadCount(unreadNotifications.length);
+      }
+    } catch (error) {
+      console.error('Error fetching missed notifications:', error);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    // Optimistically update UI
     setNotifications(prev => 
       prev.map(notif => 
-        notif.id === notificationId 
-          ? { ...notif, unread: false }
+        (notif.id === notificationId || notif._id === notificationId)
+          ? { ...notif, unread: false, isRead: true }
           : notif
       )
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
+
+    // Update backend
+    try {
+      const response = await fetch(`http://localhost:3000/api/v1/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to mark notification as read on backend');
+        // Revert optimistic update on error
+        setNotifications(prev => 
+          prev.map(notif => 
+            (notif.id === notificationId || notif._id === notificationId)
+              ? { ...notif, unread: true, isRead: false }
+              : notif
+          )
+        );
+        setUnreadCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      // Revert optimistic update on error
+      setNotifications(prev => 
+        prev.map(notif => 
+          (notif.id === notificationId || notif._id === notificationId)
+            ? { ...notif, unread: true, isRead: false }
+            : notif
+        )
+      );
+      setUnreadCount(prev => prev + 1);
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    // Store previous state for potential revert
+    const previousNotifications = [...notifications];
+    const previousUnreadCount = unreadCount;
+    
+    // Optimistically update UI
     setNotifications(prev => 
-      prev.map(notif => ({ ...notif, unread: false }))
+      prev.map(notif => ({ ...notif, unread: false, isRead: true }))
     );
     setUnreadCount(0);
+
+    // Update backend
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/notifications/read-all', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to mark all notifications as read on backend');
+        // Revert optimistic update on error
+        setNotifications(previousNotifications);
+        setUnreadCount(previousUnreadCount);
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      // Revert optimistic update on error
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
+    }
   };
 
   const clearNotifications = () => {
