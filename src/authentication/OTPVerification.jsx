@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { setUserData, setToken } from '../utils/auth';
+import { useWebSocket } from '../contexts/WebSocketContext';
 
 const OTPVerification = () => {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ const OTPVerification = () => {
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const { email, userId, userRole } = location.state || {};
+  const { startWebSocket } = useWebSocket();
 
   useEffect(() => {
     if (!email || !userId || !userRole) {
@@ -71,11 +73,14 @@ const OTPVerification = () => {
           role: userRole
         };
         setUserData(userData);
-        
+
         // Optional: Also store token in sessionStorage as backup
         if (responseData.data.token) {
           setToken(responseData.data.token);
         }
+
+        // Initialize WebSocket connection after successful OTP verification
+        startWebSocket();
 
         // Navigate based on user role
         if (userRole === 'client') {

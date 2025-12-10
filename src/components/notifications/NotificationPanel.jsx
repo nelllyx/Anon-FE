@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   FaBell,
@@ -205,7 +206,7 @@ const NotificationPanel = ({
                               key={notification.id}
                               className={`group p-3 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
                                   (notification.unread || !notification.isRead)
-                                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-sm' 
+                                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-sm'
                                       : 'bg-white hover:bg-gray-50 border-l-4 border-transparent'
                               }`}
                               onClick={() => {
@@ -409,7 +410,7 @@ const NotificationPanel = ({
                             key={notification.id}
                             className={`group p-4 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
                                 (notification.unread || !notification.isRead)
-                                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-sm' 
+                                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-sm'
                                     : 'bg-white hover:bg-gray-50 border-l-4 border-transparent'
                             }`}
                             onClick={() => {

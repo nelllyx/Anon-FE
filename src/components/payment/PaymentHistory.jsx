@@ -10,17 +10,13 @@ const PaymentHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/v1/client/payment-history', {
+        const response = await authenticatedFetch('http://localhost:3000/api/v1/client/payment-history', {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          mode: 'cors',
         });
 
         if (response.ok) {

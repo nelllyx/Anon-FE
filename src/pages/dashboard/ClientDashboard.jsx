@@ -7,6 +7,7 @@ import { getUserData } from '../../utils/auth';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import NotificationToast from '../../components/notifications/NotificationToast';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 // Default content for when no sessions are available
 const defaultContent = {
@@ -63,11 +64,16 @@ const ClientDashboard = () => {
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [activeToast, setActiveToast] = useState(null);
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useWebSocket();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   // Toast rendering on new notification
+  // Only show toast for live (WebSocket) notifications, not for missed/history
   useEffect(() => {
-    if (notifications.length > 0 && notifications[0].unread) {
-      setActiveToast(notifications[0]);
+    if (notifications.length > 0) {
+      const latestNotification = notifications[0];
+      if (latestNotification.unread && latestNotification.isLive) {
+        setActiveToast(latestNotification);
+      }
     }
   }, [notifications]);
 
@@ -103,31 +109,19 @@ const ClientDashboard = () => {
 
     try {
 
-      // const token = sessionStorage.getItem('token');
-      // if (!token) {
-      //   throw new Error('No authentication token found');
-      // }
-
-      // Fetch sessions from Redis
-      const sessionsResponse = await fetch('http://localhost:3000/api/v1/client/sessions', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-
-        }
-
+      const sessionsResponse = await authenticatedFetch('http://localhost:3000/api/v1/client/sessions', {
+        method: 'GET'
       });
 
       if (sessionsResponse.ok) {
         const sessionsData = await sessionsResponse.json();
-        setSessions(sessionsData.data.Sessions || []);
 
-
-        // Calculate stats from sessions
+        // Filter to only upcoming sessions for display
         const upcomingSessions = sessionsData.data.Sessions?.filter(s => s.status === 'upcoming') || [];
         const completedSessions = sessionsData.data.Sessions?.filter(s => s.status === 'completed') || [];
 
+        // Only store upcoming sessions in local state so UI shows upcoming only
+        setSessions(upcomingSessions);
 
         setStats({
           totalSessions: sessionsData.data.Sessions?.length || 0,

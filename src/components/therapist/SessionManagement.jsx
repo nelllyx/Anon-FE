@@ -20,6 +20,7 @@ import NotificationToast from '../notifications/NotificationToast';
 const SessionManagement = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [sessions, setSessions] = useState({
+    today: [],
     upcoming: [],
     completed: [],
     rescheduled: []
@@ -60,33 +61,43 @@ const SessionManagement = () => {
 
         // Map backend format to our component format
         const mappedSessions = {
-          upcoming: data.data.upcoming.map(session => ({
+          today: (data.data.today || []).map(session => ({
             id: session._id,
             sessionDate: session.date,
-            clientName: session.userId?.username || 'Unknown Client',
+            clientName: session.userId?.username || session.userId?.firstName || 'Unknown Client',
+            therapyType: session.therapyType || 'video',
+            preferredTime: session.preferredTime || session.startTime,
+            scheduledTime: session.scheduledTime,
+            status: session.status || 'upcoming',
+            notes: session.notes || ''
+          })),
+          upcoming: (data.data.upcoming || []).map(session => ({
+            id: session._id,
+            sessionDate: session.date,
+            clientName: session.userId?.username || session.userId?.firstName || 'Unknown Client',
             therapyType: session.therapyType || 'video',
             preferredTime: session.preferredTime || session.startTime,
             scheduledTime: session.scheduledTime,
             status: 'upcoming',
             notes: session.notes || ''
           })),
-          completed: data.data.completed.map(session => ({
+          completed: (data.data.completed || []).map(session => ({
             id: session._id,
             sessionDate: session.date,
-            clientName: session.userId?.username || 'Unknown Client',
+            clientName: session.userId?.username || session.userId?.firstName || 'Unknown Client',
             therapyType: session.therapyType || 'video',
             preferredTime: session.preferredTime || session.startTime,
-            scheduledTime: session.startTime,
+            scheduledTime: session.scheduledTime || session.startTime,
             status: 'completed',
             notes: session.notes || ''
           })),
-          rescheduled: data.data.rescheduled.map(session => ({
+          rescheduled: (data.data.rescheduled || []).map(session => ({
             id: session._id,
             sessionDate: session.date,
-            clientName: session.userId?.username || 'Unknown Client',
+            clientName: session.userId?.username || session.userId?.firstName || 'Unknown Client',
             therapyType: session.therapyType || 'video',
             preferredTime: session.preferredTime || session.startTime,
-            scheduledTime: session.startTime,
+            scheduledTime: session.scheduledTime || session.startTime,
             status: 'rescheduled',
             notes: session.notes || ''
           }))
@@ -105,25 +116,27 @@ const SessionManagement = () => {
   };
 
   const filterSessions = () => {
-    if (activeTab === 'today') {
-      // Filter sessions for today's date
-      const today = new Date().toDateString();
-      const todaySessions = sessions.upcoming?.filter(session => 
-        new Date(session.sessionDate).toDateString() === today
-      ) || [];
-      setFilteredSessions(todaySessions);
-    } else if (activeTab === 'upcoming') {
-      // Filter upcoming sessions but exclude today's sessions
-      const today = new Date().toDateString();
-      const upcomingSessions = sessions.upcoming?.filter(session => 
-        new Date(session.sessionDate).toDateString() !== today
-      ) || [];
-      setFilteredSessions(upcomingSessions);
-    } else {
-      const filtered = sessions[activeTab] || [];
-      setFilteredSessions(filtered);
-    }
+    // Backend already categorizes sessions, so we just use the appropriate category
+    const filtered = sessions[activeTab] || [];
+    setFilteredSessions(filtered);
   };
+
+  // Only show toast for live (WebSocket) notifications, not for missed/history
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latestNotification = notifications[0];
+
+      if (latestNotification.unread && latestNotification.isLive) {
+        setToastNotifications(prev => {
+          const exists = prev.some(toast => toast.id === latestNotification.id);
+          if (!exists) {
+            return [latestNotification, ...prev.slice(0, 4)];
+          }
+          return prev;
+        });
+      }
+    }
+  }, [notifications]);
 
   const handleSetTime = (session) => {
     setSelectedSession(session);
@@ -152,7 +165,8 @@ const SessionManagement = () => {
         setShowSetTimeModal(false);
 
         // Send WebSocket notification
-        const session = sessions.upcoming.find(s => s.id === sessionId) || 
+        const session = sessions.today.find(s => s.id === sessionId) ||
+                       sessions.upcoming.find(s => s.id === sessionId) || 
                        sessions.completed.find(s => s.id === sessionId) || 
                        sessions.rescheduled.find(s => s.id === sessionId);
         
@@ -360,9 +374,7 @@ const SessionManagement = () => {
             <div className="text-center">
               <p className="text-xs text-gray-500">Today&#39;s Sessions</p>
               <p className="text-lg font-semibold text-blue-600">
-                {sessions.upcoming?.filter(s => 
-                  new Date(s.sessionDate).toDateString() === new Date().toDateString()
-                ).length || 0}
+                {sessions.today?.length || 0}
               </p>
             </div>
             <div className="h-8 w-px bg-gray-300"></div>
@@ -404,16 +416,7 @@ const SessionManagement = () => {
                 <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
                   activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
                 }`}>
-                  {tab.id === 'today' 
-                    ? sessions.upcoming?.filter(s => 
-                        new Date(s.sessionDate).toDateString() === new Date().toDateString()
-                      ).length || 0
-                    : tab.id === 'upcoming'
-                    ? sessions.upcoming?.filter(s => 
-                        new Date(s.sessionDate).toDateString() !== new Date().toDateString()
-                      ).length || 0
-                    : sessions[tab.id]?.length || 0
-                  }
+                  {sessions[tab.id]?.length || 0}
                 </span>
               </button>
             ))}
@@ -559,12 +562,13 @@ const SessionManagement = () => {
         ) : (
           <div className="p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              {activeTab === 'today' && <FaCalendarAlt className="text-gray-400 text-2xl" />}
               {activeTab === 'upcoming' && <FaCalendarAlt className="text-gray-400 text-2xl" />}
               {activeTab === 'completed' && <FaCheck className="text-gray-400 text-2xl" />}
               {activeTab === 'rescheduled' && <FaRedo className="text-gray-400 text-2xl" />}
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {activeTab} sessions found
+              No {activeTab === 'today' ? "today's" : activeTab} sessions found
             </h3>
 
           </div>

@@ -3,9 +3,8 @@ import {getCookieNames, hasRefreshCookie, logout} from './auth';
 // Custom hook for making authenticated API requests
 export const useAuthenticatedFetch = () => {
   return async (url, options = {}) => {
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-    };
+    const isFormData = options.body instanceof FormData;
+    const defaultHeaders = isFormData ? {} : { 'Content-Type': 'application/json' };
 
     const config = {
       ...options,
@@ -27,12 +26,7 @@ export const useAuthenticatedFetch = () => {
       console.log('🚨 Received 401, attempting refresh...');
       const refreshed = await refreshToken();
       if (!refreshed) {
-        // If there's no refresh cookie, log out immediately
-        if (!hasRefreshCookie()) {
-          console.log('🚪 No refresh cookie found, logging out...');
-          await logout();
-        }
-        return response; // propagate original 401
+        return response; // propagate original 401; refreshToken handles logout on 401/403
       }
 
       // retry once after successful refresh
@@ -49,19 +43,8 @@ export const useAuthenticatedFetch = () => {
 // Function to refresh token using refresh token from cookie
 export const refreshToken = async () => {
   try {
-    const { refreshToken } = getCookieNames();
-    console.log('🍪 Checking for refresh cookie:', refreshToken);
-    console.log('🍪 Document cookies:', document.cookie);
-    
-    if (!document.cookie.includes(`${refreshToken}=`)) {
-      console.log('❌ Refresh cookie not found');
-      return false;
-    }
-    
-    console.log('✅ Refresh cookie found, proceeding with refresh...');
-
     console.log('🔄 Attempting token refresh...');
-    const response = await fetch('http://localhost:3000/api/v1/refresh', {
+    const response = await fetch('http://localhost:3000/api/v1/fetch-accessTok', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -76,7 +59,8 @@ export const refreshToken = async () => {
       return true; // backend updates cookies
     }
 
-    console.log('❌ Token refresh failed with status:', response.status);
+    const failureText = await response.text().catch(() => '<no body>');
+    console.log('❌ Token refresh failed with status:', response.status, 'body:', failureText);
     
     // If backend indicates no refresh token, auto-logout
     if (response.status === 401 || response.status === 403) {

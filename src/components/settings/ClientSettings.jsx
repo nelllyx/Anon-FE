@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getUserData, clearAuth } from '../../utils/auth';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from "lucide-react"
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const ClientSettings = () => {
     const [activeTab, setActiveTab] = useState('account');
@@ -9,6 +10,7 @@ const ClientSettings = () => {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const navigate = useNavigate();
+    const authenticatedFetch = useAuthenticatedFetch();
 
     const [showCurrentPassword, setShowCurrentPassword] = useState(false)
      const [showNewPassword, setShowNewPassword] = useState(false)
@@ -132,11 +134,10 @@ const ClientSettings = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/v1/client/change-password', {
+            const response = await authenticatedFetch('http://localhost:3000/api/v1/client/change-password', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                   // 'Authorization': Bearer ${localStorage.getItem('token')}
                 },
                 body: JSON.stringify({
                     currentPassword: passwordForm.currentPassword,
@@ -168,11 +169,10 @@ const ClientSettings = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            const response = await fetch('http://localhost:3000/api/v1/client/delete-account', {
+            const response = await authenticatedFetch('http://localhost:3000/api/v1/client/delete-account', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                  //  'Authorization': Bearer ${localStorage.getItem('token')}
                 }
             });
 

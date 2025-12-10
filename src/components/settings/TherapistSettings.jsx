@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getUserData, clearAuth } from '../../utils/auth';
 import { useNavigate } from 'react-router-dom';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const TherapistSettings = () => {
     const [activeTab, setActiveTab] = useState('account');
@@ -8,6 +9,7 @@ const TherapistSettings = () => {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const navigate = useNavigate();
+    const authenticatedFetch = useAuthenticatedFetch();
 
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: '',
@@ -128,11 +130,10 @@ const TherapistSettings = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/v1/therapist/change-password', {
+            const response = await authenticatedFetch('http://localhost:3000/api/v1/therapist/change-password', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                  //'Authorization': Bearer ${localStorage.getItem('token')}
                 },
                 body: JSON.stringify({
                     currentPassword: passwordForm.currentPassword,
@@ -160,11 +161,10 @@ const TherapistSettings = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            const response = await fetch('http://localhost:3000/api/v1/therapist/delete-account', {
+            const response = await authenticatedFetch('http://localhost:3000/api/v1/therapist/delete-account', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                   //Authorization': Bearer ${localStorage.getItem('token')}
                 }
             });
 

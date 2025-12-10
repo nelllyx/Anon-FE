@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getUserData } from '../../utils/auth';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const TherapistProfile = () => {
     const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ const TherapistProfile = () => {
     const [previewUrl, setPreviewUrl] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const authenticatedFetch = useAuthenticatedFetch();
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -74,11 +76,8 @@ const TherapistProfile = () => {
                 const imageFormData = new FormData();
                 imageFormData.append('avatar', avatar);
 
-                const imageResponse = await fetch('http://localhost:3000/api/v1/therapist/update-profile', {
+                const imageResponse = await authenticatedFetch('http://localhost:3000/api/v1/therapist/update-profile', {
                     method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-                    },
                     body: imageFormData
                 });
 
@@ -91,11 +90,10 @@ const TherapistProfile = () => {
             }
 
             // Then update the profile
-            const response = await fetch('http://localhost:3000/api/v1/therapist/update-profile', {
+            const response = await authenticatedFetch('http://localhost:3000/api/v1/therapist/update-profile', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
                     ...formData,

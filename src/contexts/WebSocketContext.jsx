@@ -1,5 +1,8 @@
-import  { createContext, useContext, useEffect, useState, useRef } from 'react';
+
+import  { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { hasRefreshCookie, getUserData } from '../utils/auth';
+import { useAuthenticatedFetch } from '../utils/api';
 
 const WebSocketContext = createContext();
 
@@ -16,18 +19,23 @@ export const WebSocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [shouldConnect, setShouldConnect] = useState(false);
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
+  const authenticatedFetch = useAuthenticatedFetch();
 
+  // Rehydrate notifications from localStorage on mount
   useEffect(() => {
-    // Rehydrate notifications from localStorage on mount
     try {
       const storedNotifications = localStorage.getItem('anon_notifications');
       const storedUnread = localStorage.getItem('anon_unread_count');
       if (storedNotifications) {
         const parsed = JSON.parse(storedNotifications);
-        setNotifications(Array.isArray(parsed) ? parsed : []);
+        const normalized = Array.isArray(parsed)
+          ? parsed.map(n => ({ ...n, isLive: false }))
+          : [];
+        setNotifications(normalized);
       }
       if (storedUnread) {
         const parsedUnread = parseInt(storedUnread, 10);
@@ -36,23 +44,13 @@ export const WebSocketProvider = ({ children }) => {
     } catch (e) {
       console.warn('Failed to rehydrate notifications from storage:', e);
     }
+  }, []);
 
-    const initializeConnection = async () => {
-      // Fetch missed notifications from backend first
-      await fetchMissedNotifications();
-      await connectWebSocket();
-    };
-
-    initializeConnection();
-
-    return () => {
-      if (socket) {
-        socket.disconnect();
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
+  // Automatically enable WebSocket for already-authenticated users on refresh
+  useEffect(() => {
+    if (hasRefreshCookie() || getUserData()) {
+      setShouldConnect(true);
+    }
   }, []);
 
   // Persist notifications and counts to localStorage
@@ -70,16 +68,12 @@ export const WebSocketProvider = ({ children }) => {
       // For HTTP-only cookies, we need to get the token from the server
       // First, try to get token from a dedicated endpoint
       let token = null;
-      
+
       try {
-        const response = await fetch('http://localhost:3000/api/v1/auth/token', {
-          method: 'GET',
-          credentials: 'include', // This ensures cookies are sent
-          headers: {
-            'Content-Type': 'application/json',
-          }
+        const response = await authenticatedFetch('http://localhost:3000/api/v1/auth/token', {
+          method: 'GET'
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           token = data.token;
@@ -90,13 +84,15 @@ export const WebSocketProvider = ({ children }) => {
       } catch (error) {
         console.warn('❌ Could not fetch token from server:', error);
       }
-      
+
 
       if (!token) {
         console.warn('❌ No authentication token or cookies available for WebSocket connection');
+        // Automatically retry later instead of requiring a manual connect click
+        attemptReconnect();
         return;
       }
-      
+
       // Socket.IO connection with authentication
       const socketOptions = {
         transports: ['websocket', 'polling'],
@@ -111,12 +107,12 @@ export const WebSocketProvider = ({ children }) => {
           'Cookie': document.cookie // Explicitly include cookies
         }
       };
-      
+
       // Add token to auth if available
       if (token) {
         socketOptions.auth = { token: token };
       }
-      
+
       console.log('🔌 Attempting WebSocket connection with options:', socketOptions);
       const newSocket = io('http://localhost:3000', socketOptions);
 
@@ -190,13 +186,35 @@ export const WebSocketProvider = ({ children }) => {
     }
   };
 
+  const initializeConnection = useCallback(async () => {
+    // Fetch missed notifications from backend first
+    await fetchMissedNotifications();
+    await connectWebSocket();
+  }, []);
+
+  // Start or stop WebSocket connection based on shouldConnect
+  useEffect(() => {
+    if (!shouldConnect) return;
+
+    initializeConnection();
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, [shouldConnect, initializeConnection]);
+
   const attemptReconnect = () => {
     if (reconnectAttempts.current < maxReconnectAttempts) {
       reconnectAttempts.current++;
       const delay = Math.pow(2, reconnectAttempts.current) * 1000; // Exponential backoff
-      
+
       console.log(`🔄 Scheduling reconnection attempt ${reconnectAttempts.current}/${maxReconnectAttempts} in ${delay}ms`);
-      
+
       reconnectTimeoutRef.current = setTimeout(async () => {
         console.log(`🔄 Attempting to reconnect... (${reconnectAttempts.current}/${maxReconnectAttempts})`);
         await connectWebSocket();
@@ -208,7 +226,7 @@ export const WebSocketProvider = ({ children }) => {
 
   const handleWebSocketMessage = (data) => {
     console.log('WebSocket message received:', data);
-    
+
     switch (data.type) {
       case 'session_update':
         addNotification({
@@ -219,10 +237,11 @@ export const WebSocketProvider = ({ children }) => {
           timestamp: data.timestamp || new Date(),
           data: data.data,
           unread: true,
-          isRead: false
+          isRead: false,
+          isLive: true
         });
         break;
-      
+
       case 'session_time_set':
         addNotification({
           id: data.id || data.notificationId || Date.now() + Math.random(),
@@ -232,10 +251,11 @@ export const WebSocketProvider = ({ children }) => {
           timestamp: data.timestamp || new Date(),
           data: data.data,
           unread: true,
-          isRead: false
+          isRead: false,
+          isLive: true
         });
         break;
-      
+
       case 'session_rescheduled':
         addNotification({
           id: data.id || data.notificationId || Date.now() + Math.random(),
@@ -245,10 +265,11 @@ export const WebSocketProvider = ({ children }) => {
           timestamp: data.timestamp || new Date(),
           data: data.data,
           unread: true,
-          isRead: false
+          isRead: false,
+          isLive: true
         });
         break;
-      
+
       case 'session_completed':
         addNotification({
           id: data.id || data.notificationId || Date.now() + Math.random(),
@@ -258,10 +279,11 @@ export const WebSocketProvider = ({ children }) => {
           timestamp: data.timestamp || new Date(),
           data: data.data,
           unread: true,
-          isRead: false
+          isRead: false,
+          isLive: true
         });
         break;
-      
+
       case 'session_cancelled':
         addNotification({
           id: data.id || data.notificationId || Date.now() + Math.random(),
@@ -271,10 +293,11 @@ export const WebSocketProvider = ({ children }) => {
           timestamp: data.timestamp || new Date(),
           data: data.data,
           unread: true,
-          isRead: false
+          isRead: false,
+          isLive: true
         });
         break;
-      
+
       case 'therapist_assigned':
         addNotification({
           id: data.id || data.notificationId || Date.now() + Math.random(),
@@ -284,7 +307,8 @@ export const WebSocketProvider = ({ children }) => {
           timestamp: data.timestamp || new Date(),
           data: data.data,
           unread: true,
-          isRead: false
+          isRead: false,
+          isLive: true
         });
         break;
       case 'payment':
@@ -296,10 +320,11 @@ export const WebSocketProvider = ({ children }) => {
           timestamp: data.timestamp || new Date(),
           data: data.data,
           unread: true,
-          isRead: false
+          isRead: false,
+          isLive: true
         });
         break;
-      
+
       default:
         console.log('Unknown WebSocket message type:', type, data);
     }
@@ -318,40 +343,61 @@ export const WebSocketProvider = ({ children }) => {
   // Fetch missed notifications from backend
   const fetchMissedNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/notifications', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/notifications/get-notifications', {
+        method: 'GET'
       });
+
+      console.log("fetched notification: " , response)
 
       if (response.ok) {
         const data = await response.json();
-        const backendNotifications = data.notifications || data.data || [];
-        
-        // Merge with existing notifications, avoiding duplicates
-        setNotifications(prev => {
-          const existingIds = new Set(prev.map(n => n.id || n._id));
-          const newNotifications = backendNotifications
-            .filter(n => !existingIds.has(n.id || n._id))
-            .map(n => ({
-              id: n.id || n._id,
-              type: n.type,
-              title: n.title,
-              message: n.message,
-              timestamp: n.timestamp || n.createdAt,
-              data: n.data,
-              unread: !n.isRead,
-              isRead: n.isRead || false
-            }));
-          
-          return [...newNotifications, ...prev].slice(0, 50); // Keep last 50
-        });
 
-        // Update unread count
-        const unreadNotifications = backendNotifications.filter(n => !n.isRead);
-        setUnreadCount(unreadNotifications.length);
+        // Normalize backend notifications into an array safely
+        // Expected shapes we handle:
+        // - { notifications: [...] }
+        // - { data: [...] }
+        // - { data: { notifications: [...] } }
+        // - or any non-array → treated as empty
+        let raw = data.notifications ?? data.data ?? [];
+        if (!Array.isArray(raw)) {
+          if (Array.isArray(raw.notifications)) {
+            raw = raw.notifications;
+          } else if (Array.isArray(raw.items)) {
+            raw = raw.items;
+          } else {
+            console.warn('Unexpected notifications payload shape:', data);
+            raw = [];
+          }
+        }
+        const backendNotifications = raw;
+
+        if (Array.isArray(backendNotifications)) {
+          // Merge with existing notifications, avoiding duplicates
+          setNotifications(prev => {
+            const existingIds = new Set(prev.map(n => n.id || n._id));
+            const newNotifications = backendNotifications
+                .filter(n => !existingIds.has(n.id || n._id))
+                .map(n => ({
+                  id: n.id || n._id,
+                  type: n.type,
+                  title: n.title,
+                  message: n.message,
+                  timestamp: n.timestamp || n.createdAt,
+                  data: n.data,
+                  unread: !n.isRead,
+                  isRead: n.isRead || false,
+                  isLive: false
+                }));
+
+            return [...newNotifications, ...prev].slice(0, 50); // Keep last 50
+          });
+
+          // Update unread count
+          const unreadNotifications = backendNotifications.filter(n => !n.isRead);
+          setUnreadCount(unreadNotifications.length);
+        } else {
+          console.warn('Backend notifications is not an array after normalization:', backendNotifications);
+        }
       }
     } catch (error) {
       console.error('Error fetching missed notifications:', error);
@@ -360,20 +406,19 @@ export const WebSocketProvider = ({ children }) => {
 
   const markAsRead = async (notificationId) => {
     // Optimistically update UI
-    setNotifications(prev => 
-      prev.map(notif => 
-        (notif.id === notificationId || notif._id === notificationId)
-          ? { ...notif, unread: false, isRead: true }
-          : notif
-      )
+    setNotifications(prev =>
+        prev.map(notif =>
+            (notif.id === notificationId || notif._id === notificationId)
+                ? { ...notif, unread: false, isRead: true }
+                : notif
+        )
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
 
     // Update backend
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        credentials: 'include',
+      const response = await authenticatedFetch(`http://localhost:3000/api/v1/notifications/mark-read/${notificationId}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         }
@@ -382,24 +427,24 @@ export const WebSocketProvider = ({ children }) => {
       if (!response.ok) {
         console.error('Failed to mark notification as read on backend');
         // Revert optimistic update on error
-        setNotifications(prev => 
-          prev.map(notif => 
-            (notif.id === notificationId || notif._id === notificationId)
-              ? { ...notif, unread: true, isRead: false }
-              : notif
-          )
+        setNotifications(prev =>
+            prev.map(notif =>
+                (notif.id === notificationId || notif._id === notificationId)
+                    ? { ...notif, unread: true, isRead: false }
+                    : notif
+            )
         );
         setUnreadCount(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
       // Revert optimistic update on error
-      setNotifications(prev => 
-        prev.map(notif => 
-          (notif.id === notificationId || notif._id === notificationId)
-            ? { ...notif, unread: true, isRead: false }
-            : notif
-        )
+      setNotifications(prev =>
+          prev.map(notif =>
+              (notif.id === notificationId || notif._id === notificationId)
+                  ? { ...notif, unread: true, isRead: false }
+                  : notif
+          )
       );
       setUnreadCount(prev => prev + 1);
     }
@@ -409,18 +454,17 @@ export const WebSocketProvider = ({ children }) => {
     // Store previous state for potential revert
     const previousNotifications = [...notifications];
     const previousUnreadCount = unreadCount;
-    
+
     // Optimistically update UI
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, unread: false, isRead: true }))
+    setNotifications(prev =>
+        prev.map(notif => ({ ...notif, unread: false, isRead: true }))
     );
     setUnreadCount(0);
 
     // Update backend
     try {
-      const response = await fetch('http://localhost:3000/api/v1/notifications/read-all', {
-        method: 'PUT',
-        credentials: 'include',
+      const response = await authenticatedFetch('http://localhost:3000/api/v1/notifications/read-all', {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         }
@@ -464,6 +508,7 @@ export const WebSocketProvider = ({ children }) => {
     clearNotifications,
     sendMessage,
     reconnect: connectWebSocket,
+    startWebSocket: () => setShouldConnect(true),
     connectionStatus: {
       isConnected,
       reconnectAttempts: reconnectAttempts.current,
@@ -472,8 +517,8 @@ export const WebSocketProvider = ({ children }) => {
   };
 
   return (
-    <WebSocketContext.Provider value={value}>
-      {children}
-    </WebSocketContext.Provider>
+      <WebSocketContext.Provider value={value}>
+        {children}
+      </WebSocketContext.Provider>
   );
 };

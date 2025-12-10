@@ -20,6 +20,7 @@ import { getUserData } from '../../utils/auth';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import NotificationToast from '../../components/notifications/NotificationToast';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const defaultContent = {
   welcomeMessage: "Welcome to your therapy practice!",
@@ -68,6 +69,7 @@ const TherapistDashboard = () => {
   const [stats, setStats] = useState({
     totalSessions: 0,
     completedSessions: 0,
+    todaySessions: 1,
     upcomingSessions: 0,
     activeClients: 0,
     monthlyRevenue: 0
@@ -77,6 +79,7 @@ const TherapistDashboard = () => {
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [toastNotifications, setToastNotifications] = useState([]);
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useWebSocket();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   useEffect(() => {
     const userData = getUserData();
@@ -110,12 +113,8 @@ const TherapistDashboard = () => {
     try {
 
       // Fetch therapist sessions from API
-      const sessionsResponse = await fetch('http://localhost:3000/api/v1/therapist/sessions/week', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const sessionsResponse = await authenticatedFetch('http://localhost:3000/api/v1/therapist/sessions/week', {
+        method: 'GET'
       });
 
       if (sessionsResponse.ok) {
@@ -124,7 +123,8 @@ const TherapistDashboard = () => {
 
         // Calculate stats from sessions
         const upcomingSessions = sessionsData.data?.upcoming?.filter(s => s.status === 'upcoming') || [];
-        const completedSessions = sessionsData.data?.completed?.filter(s => s.status === 'completed') || [];
+        const todaySessions = sessionsData.data?.today?.filter(s => s.status === 'upcoming') || [];
+          const completedSessions = sessionsData.data?.completed?.filter(s => s.status === 'completed') || [];
         
         // Calculate unique active clients from sessions
         const uniqueClients = new Set();
@@ -142,6 +142,7 @@ const TherapistDashboard = () => {
           totalSessions: sessionsData.data?.Sessions?.length || 0,
           completedSessions: completedSessions.length,
           upcomingSessions: upcomingSessions.length,
+          todaySessions: todaySessions.length,
           activeClients: sessionsData.data?.activeClients || activeClientsCount,
           monthlyRevenue: sessionsData.data?.monthlyRevenue || 0
         });
@@ -151,8 +152,7 @@ const TherapistDashboard = () => {
         const isProfileComplete = !!(userData &&
           userData.firstName &&
           userData.lastName);
-          // userData.specialization &&
-          // userData.experience;
+
 
         console.log('Profile complete:', isProfileComplete);
         console.log('User data:', userData);
@@ -196,17 +196,16 @@ const TherapistDashboard = () => {
   }, []);
 
   // Handle WebSocket notifications and convert to toast notifications
+  // Only show toast for live (WebSocket) notifications, not for missed/history
   useEffect(() => {
     if (notifications.length > 0) {
       const latestNotification = notifications[0];
-      
-      // Only show toast for unread notifications
-      if (latestNotification.unread) {
+
+      if (latestNotification.unread && latestNotification.isLive) {
         setToastNotifications(prev => {
-          // Avoid duplicate toasts
           const exists = prev.some(toast => toast.id === latestNotification.id);
           if (!exists) {
-            return [latestNotification, ...prev.slice(0, 4)]; // Keep max 5 toasts
+            return [latestNotification, ...prev.slice(0, 4)];
           }
           return prev;
         });
@@ -252,7 +251,7 @@ const TherapistDashboard = () => {
     return [
       {
         title: "Today's Sessions",
-        value: stats.upcomingSessions.toString(),
+        value: stats.todaySessions.toString(),
         icon: <FaCalendarAlt className="text-blue-500" />,
         change: `${stats.totalSessions} total`,
         color: "from-blue-50 to-blue-100",

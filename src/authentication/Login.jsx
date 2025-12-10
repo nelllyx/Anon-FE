@@ -2,6 +2,7 @@ import phone from "../assets/loginPhoto.jpg"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useState } from "react"
 import { setUserData } from '../utils/auth'
+import { useWebSocket } from '../contexts/WebSocketContext'
 
 const Login = () => {
     const [showRegisterOptions, setShowRegisterOptions] = useState(false);
@@ -13,6 +14,7 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const { startWebSocket } = useWebSocket();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -44,6 +46,9 @@ const Login = () => {
             if (response.ok) {
                 // Store user data (tokens are now in cookies)
                 setUserData(data.data.user);
+
+                // Initialize WebSocket connection after successful login
+                startWebSocket();
 
                 // Redirect based on user role
                 const userRole = data.data.user.role;

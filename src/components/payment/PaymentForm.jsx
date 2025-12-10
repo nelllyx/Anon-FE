@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import {FaArrowRight, FaCheckCircle, FaTimesCircle, FaSpinner} from 'react-icons/fa';
 import PaystackPop from '@paystack/inline-js'
 import {  getUserData, getToken } from '../../utils/auth';
+import { useAuthenticatedFetch } from '../../utils/api';
 
 const PaymentForm = () => {
   const [email, setEmail] = useState('');
@@ -11,20 +12,18 @@ const PaymentForm = () => {
   const [loading, setLoading] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const navigate = useNavigate();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   // On mount, check for subscriptionData and create pending subscription if needed
   useEffect(() => {
     const createPendingSubscription = async (data) => {
       sessionStorage.setItem('creatingSubscription', 'true');
       try {
-        const response = await fetch('http://localhost:3000/api/v1/client/subscriptions', {
+        const response = await authenticatedFetch('http://localhost:3000/api/v1/client/subscriptions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include', // Include cookies in the request
-          mode: 'cors',
-
           body: JSON.stringify({
             planName: data.planName,
             status: 'pending'
@@ -72,13 +71,12 @@ const PaymentForm = () => {
     setLoading(true);
     try {
       const endpoint = `http://localhost:3000/api/v1/client/payment/verify/${reference}`;
-      const response = await fetch(endpoint, {
+      const response = await authenticatedFetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`,
-        },
-        credentials: 'include',
+        }
       });
       const data = await response.json();
       if (response.ok) {
@@ -133,13 +131,12 @@ const PaymentForm = () => {
         amount,
         subscriptionId: data.id
       };
-      const response = await fetch(endpoint, {
+      const response = await authenticatedFetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`,
         },
-        credentials: 'include',
         body: JSON.stringify(requestBody)
       });
       const paymentResponse = await response.json();
