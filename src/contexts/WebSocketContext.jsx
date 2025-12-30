@@ -9,6 +9,7 @@ const WebSocketContext = createContext();
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
   if (!context) {
+    
     throw new Error('useWebSocket must be used within a WebSocketProvider');
   }
   return context;
@@ -172,7 +173,7 @@ export const WebSocketProvider = ({ children }) => {
         try {
           const payload = args && args.length > 0 ? args[0] : undefined;
           console.log('📨 Socket event:', eventName, payload);
-        } catch (_) {
+        } catch (err) {
           console.log('📨 Socket event:', eventName);
         }
       });

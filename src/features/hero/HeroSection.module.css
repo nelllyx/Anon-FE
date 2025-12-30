@@ -2,10 +2,49 @@
     background-image: url(../../assets/pexels-anna-shvets-4557876.jpg);
     background-size: cover;
     background-repeat: no-repeat;
-    background-position:  center;
-    background-attachment: fixed;
-    height: 75vh;
-    /* background-position: center; */
+    background-position: center center;
+    /* Remove fixed attachment for better mobile/tablet support */
+    /* background-attachment: fixed; */
+    /* Let Tailwind handle height via min-height classes */
+    width: 100%;
+    position: relative;
+    /* Ensure consistent rendering across browsers */
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    /* Scale down the background image slightly */
+    transform: scale(1);
+    overflow: hidden;
+}
+
+.heroContent {
+    animation: fadeInUp 1.2s ease-out;
+}
+
+.heroTitle {
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5),
+                 0 4px 40px rgba(0, 0, 0, 0.3);
+    letter-spacing: -0.02em;
+}
+
+.primaryButton {
+    position: relative;
+    overflow: hidden;
+}
+
+.primaryButton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.primaryButton:hover::before {
+    left: 100%;
 }
 
 /* Add smooth fade-in animation for the content */
@@ -20,7 +59,48 @@
   }
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Vendor prefixes for better browser support */
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+    -webkit-transform: translateY(20px);
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+
+@-webkit-keyframes fadeInUp {
+  from {
+    opacity: 0;
+    -webkit-transform: translateY(30px);
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+
 .hero_bg > div {
+  -webkit-animation: fadeIn 1s ease-out;
+  -moz-animation: fadeIn 1s ease-out;
+  -o-animation: fadeIn 1s ease-out;
   animation: fadeIn 1s ease-out;
 }
 

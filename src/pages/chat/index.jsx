@@ -4,7 +4,7 @@ import { FiSend, FiPaperclip, FiSmile, FiX, FiImage, FiFile, FiCheckCircle, FiMe
 import { FaCircle } from 'react-icons/fa';
 import EmojiPicker from 'emoji-picker-react';
 import { useAuthenticatedFetch } from '../../utils/api';
-import { format, parseISO, isToday, isAfter, isBefore, addHours } from 'date-fns';
+import { format, parseISO, isAfter, addHours } from 'date-fns';
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);

@@ -8,8 +8,7 @@ export default function App(){
   ])
   return (
     <WebSocketProvider>
-      <RouterProvider router={router}>
-      </RouterProvider>
+      <RouterProvider router={router} />
     </WebSocketProvider>
   )
 }

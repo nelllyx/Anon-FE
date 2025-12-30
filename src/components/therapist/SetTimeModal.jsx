@@ -128,7 +128,7 @@ const SetTimeModal = ({ session, onClose, onSave }) => {
             
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <FaClock />
-              <span>Preferred time: {formatTime(session.preferredTime)}</span>
+              <span>Preferred time: {session.preferredTime}</span>
             </div>
           </div>
         </div>
