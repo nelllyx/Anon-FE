@@ -15,7 +15,7 @@ const HeroSection = () => {
           <div className="w-16 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent rounded-full mb-2 opacity-80"></div>
           
           {/* Main Heading */}
-          <h1 className={`${styles.heroTitle} text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight`}>
+          <h1 className={`${styles.heroTitle} text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-extrabold text-white leading-tight tracking-tight`}>
             Your Journey to <br className="hidden sm:block" />
             <span className="bg-gradient-to-r from-blue-400 via-blue-300 to-cyan-300 bg-clip-text text-transparent">
               Better Mental Health
