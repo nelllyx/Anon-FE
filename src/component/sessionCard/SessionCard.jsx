@@ -1,6 +1,6 @@
 import { FaCalendarAlt, FaClock, FaUserMd, FaVideo, FaUser, FaStickyNote } from 'react-icons/fa';
 
-const SessionCard = ({ therapist, date, time, status, client, clientImage, duration, type, notes }) => {
+const SessionCard = ({date, time, status, client, clientImage, duration, type, notes }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'upcoming':
@@ -11,6 +11,19 @@ const SessionCard = ({ therapist, date, time, status, client, clientImage, durat
         return 'bg-red-100 text-red-600';
       default:
         return 'bg-gray-100 text-gray-600';
+    }
+  };
+
+  const getStatusDotColor = (status) => {
+    switch (status) {
+      case 'upcoming':
+        return 'bg-blue-600';
+      case 'completed':
+        return 'bg-green-600';
+      case 'cancelled':
+        return 'bg-red-600';
+      default:
+        return 'bg-gray-600';
     }
   };
 
@@ -38,7 +51,8 @@ const SessionCard = ({ therapist, date, time, status, client, clientImage, durat
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 transition-all duration-300 hover:shadow-md">
       <div className="flex items-center justify-between mb-3 md:mb-4">
-        <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+        <span className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(status)} flex items-center gap-1.5`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${getStatusDotColor(status)}`}></span>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
         <div className="flex items-center gap-2">

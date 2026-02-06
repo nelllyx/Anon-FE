@@ -44,10 +44,10 @@ const SideBar = () => {
 
   const isTherapist = userData?.role === 'therapist';
 
-  const UserSettings = async  ()=> {
-    if(isTherapist){
+  const UserSettings = async () => {
+    if (isTherapist) {
       navigate('/therapist/settings')
-    }else {
+    } else {
       navigate('/client/settings')
     }
   }
@@ -62,6 +62,7 @@ const SideBar = () => {
 
   const clientMenuItems = [
     { icon: <FaHome />, label: 'Home', to: '/client/dashboard' },
+    { icon: <FaCalendarAlt />, label: 'Manage Sessions', to: '/client/sessions' },
     { icon: <FaUserFriends />, label: 'Talk to a therapist', to: '/talk-to-therapist' },
     { icon: <FaComments />, label: 'Chat', to: '/chats' },
     { icon: <FaUser />, label: 'Profile', to: '/client/profile' },
@@ -106,10 +107,9 @@ const SideBar = () => {
             key={item.label}
             to={item.to}
             className={({ isActive }) =>
-              `w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left no-underline ${
-                isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+              `w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left no-underline ${isActive
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
               }`
             }
             end
@@ -137,7 +137,7 @@ const SideBar = () => {
             <FaCog className="text-sm" />
             <span className="text-sm font-medium">Settings</span>
           </button>
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-900 hover:text-white transition-colors"
           >

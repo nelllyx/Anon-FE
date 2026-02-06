@@ -17,38 +17,40 @@ import ClientProfile from "../components/profile/ClientProfile"
 import ClientSettings from "../components/settings/ClientSettings.jsx"
 import TherapistProfile from "../components/profile/TherapistProfile"
 import TherapistSettings from "../components/settings/TherapistSettings"
+
 import SessionManagement from "../components/therapist/SessionManagement"
+import ClientSessions from "../pages/sessions/ClientSessions"
 
 export const Routes = [
     {
         path: "/",
-        element: <Layout/>,
+        element: <Layout />,
         children: [
             {
-                path:"/",
-                element: <Features/>,
+                path: "/",
+                element: <Features />,
             }
-        ]       
+        ]
     },
 
     {
         path: "/register/client",
-        element: <Register/>
+        element: <Register />
     },
 
     {
         path: "/register/therapist",
-        element: <RegisterTherapist/>
+        element: <RegisterTherapist />
     },
 
     {
         path: "/login",
-        element: <Login/>
+        element: <Login />
     },
-    
+
     {
         path: "/verify-otp",
-        element: <OTPVerification/>
+        element: <OTPVerification />
     },
 
     {
@@ -156,6 +158,15 @@ export const Routes = [
         element: (
             <ProtectedRoute requiredRole="therapist">
                 <SessionManagement />
+            </ProtectedRoute>
+        )
+    },
+
+    {
+        path: "/client/sessions",
+        element: (
+            <ProtectedRoute requiredRole="client">
+                <ClientSessions />
             </ProtectedRoute>
         )
     },

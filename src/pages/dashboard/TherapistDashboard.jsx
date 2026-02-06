@@ -14,13 +14,17 @@ import {
   FaVideo,
   FaMapMarkerAlt,
   FaArrowRight,
-  FaUserFriends
+  FaUserFriends,
+  FaClock
 } from 'react-icons/fa';
 import { getUserData } from '../../utils/auth';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import NotificationToast from '../../components/notifications/NotificationToast';
 import { useAuthenticatedFetch } from '../../utils/api';
+import { isToday, parseISO, differenceInMinutes } from 'date-fns';
+import TherapistStatsChart from '../../component/dashboard/TherapistStatsChart';
+import TherapistSessionBanner from '../../component/dashboard/TherapistSessionBanner';
 
 const defaultContent = {
   welcomeMessage: "Welcome to your therapy practice!",
@@ -87,10 +91,10 @@ const TherapistDashboard = () => {
       const firstName = userData.firstName || '';
       const lastName = userData.lastName || '';
       const fullName = `${firstName} ${lastName}`.trim();
-      const initials = firstName && lastName 
+      const initials = firstName && lastName
         ? `${firstName[0]}${lastName[0]}`
-        : firstName 
-          ? firstName[0] 
+        : firstName
+          ? firstName[0]
           : 'T';
 
       setUser({
@@ -124,8 +128,10 @@ const TherapistDashboard = () => {
         // Calculate stats from sessions
         const upcomingSessions = sessionsData.data?.upcoming?.filter(s => s.status === 'upcoming') || [];
         const todaySessions = sessionsData.data?.today?.filter(s => s.status === 'upcoming') || [];
-          const completedSessions = sessionsData.data?.completed?.filter(s => s.status === 'completed') || [];
-        
+        const completedSessions = sessionsData.data?.completed?.filter(s => s.status === 'completed') || [];
+
+        const cancelledSessions = sessionsData.data?.cancelled?.length || 0; // Assuming API returns 'cancelled' array or we filter from all
+
         // Calculate unique active clients from sessions
         const uniqueClients = new Set();
         sessionsData.data?.upcoming?.forEach(session => {
@@ -136,12 +142,11 @@ const TherapistDashboard = () => {
         });
         const activeClientsCount = uniqueClients.size;
 
-
-
         setStats({
           totalSessions: sessionsData.data?.Sessions?.length || 0,
           completedSessions: completedSessions.length,
           upcomingSessions: upcomingSessions.length,
+          cancelledSessions: cancelledSessions,
           todaySessions: todaySessions.length,
           activeClients: sessionsData.data?.activeClients || activeClientsCount,
           monthlyRevenue: sessionsData.data?.monthlyRevenue || 0
@@ -280,7 +285,7 @@ const TherapistDashboard = () => {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Mobile Sidebar Toggle */}
-      <button 
+      <button
         onClick={toggleSidebar}
         className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md md:hidden"
       >
@@ -294,7 +299,7 @@ const TherapistDashboard = () => {
 
       {/* Overlay for mobile */}
       {isSidebarOpen && isMobile && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
           onClick={toggleSidebar}
         />
@@ -307,18 +312,23 @@ const TherapistDashboard = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
-                Good Morning, Dr. {user.lastName}
+                {(() => {
+                  const hour = new Date().getHours();
+                  if (hour < 12) return 'Good Morning';
+                  if (hour < 18) return 'Good Afternoon';
+                  return 'Good Evening';
+                })()}, Dr. {user.lastName}
               </h1>
               <p className="text-xs md:text-sm text-gray-500">
                 Here&#39;s what&#39;s happening with your practice today
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <div className="relative">
-                <FaBell 
+                <FaBell
                   onClick={() => setShowNotificationPanel(true)}
-                  className="text-base text-gray-500 cursor-pointer hover:text-blue-500 transition-colors" 
+                  className="text-base text-gray-500 cursor-pointer hover:text-blue-500 transition-colors"
                 />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -352,6 +362,41 @@ const TherapistDashboard = () => {
             </div>
           ) : (
             <>
+              {/* Next Session Banner - Only for Today */}
+              {(() => {
+                const today = new Date();
+                const todaySessions = sessions
+                  .filter(s => isToday(parseISO(s.date)))
+                  .map(s => {
+                    // Parse time to get full Date object for sorting
+                    const d = parseISO(s.date);
+                    if (s.scheduledTime) {
+                      const timeParts = s.scheduledTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                      if (timeParts) {
+                        let hours = parseInt(timeParts[1], 10);
+                        const minutes = parseInt(timeParts[2], 10);
+                        const meridian = timeParts[3];
+                        if (meridian) {
+                          if (meridian.toUpperCase() === 'PM' && hours < 12) hours += 12;
+                          if (meridian.toUpperCase() === 'AM' && hours === 12) hours = 0;
+                        }
+                        d.setHours(hours, minutes, 0, 0);
+                      }
+                    }
+                    return { ...s, fullDate: d };
+                  })
+                  // Filter out sessions that have essentially passed (e.g., ended more than 1 hour ago)
+                  // But we want to show "Happening Now" so keep those slightly in the past
+                  .filter(s => differenceInMinutes(s.fullDate, today) > -60)
+                  .sort((a, b) => a.fullDate - b.fullDate);
+
+                const nextSession = todaySessions[0];
+
+                return nextSession ? (
+                  <TherapistSessionBanner session={nextSession} />
+                ) : null;
+              })()}
+
               {/* Stats Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {generateStats().map((stat, index) => (
@@ -371,6 +416,90 @@ const TherapistDashboard = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Weekly Performance Chart & Quick Actions Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Chart (Takes up 1 column on LG) */}
+                <div className="lg:col-span-1">
+                  <TherapistStatsChart
+                    stats={{
+                      completed: stats.completedSessions,
+                      upcoming: stats.upcomingSessions,
+                      cancelled: stats.cancelledSessions || 0
+                    }}
+                  />
+                </div>
+
+                {/* Quick Actions (Takes up 2 columns on LG, moved here for better layout balance) */}
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button
+                      onClick={() => window.location.href = '/therapist/sessions'}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                          <FaCalendarAlt className="text-blue-600" />
+                        </div>
+                        <div className="text-left">
+                          <span className="font-medium text-gray-800 block">Manage Sessions</span>
+                          <span className="text-xs text-gray-500">View and edit schedule</span>
+                        </div>
+                      </div>
+                      <FaArrowRight className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    </button>
+
+                    <button
+                      onClick={() => window.location.href = '/chats'}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                          <FaUserFriends className="text-green-600" />
+                        </div>
+                        <div className="text-left">
+                          <span className="font-medium text-gray-800 block">Client Messages</span>
+                          <span className="text-xs text-gray-500">Check new inquiries</span>
+                        </div>
+                      </div>
+                      <FaArrowRight className="text-gray-400 group-hover:text-green-500 transition-colors" />
+                    </button>
+
+                    <button
+                      onClick={() => window.location.href = '/therapist/profile'}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                          <FaClipboardList className="text-purple-600" />
+                        </div>
+                        <div className="text-left">
+                          <span className="font-medium text-gray-800 block">Update Profile</span>
+                          <span className="text-xs text-gray-500">Edit your details</span>
+                        </div>
+                      </div>
+                      <FaArrowRight className="text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    </button>
+
+                    <button
+                      onClick={() => window.location.href = '/therapist/schedule'}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-orange-300 hover:bg-orange-50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                          <FaClock className="text-orange-600" />
+                        </div>
+                        <div className="text-left">
+                          <span className="font-medium text-gray-800 block">Availability</span>
+                          <span className="text-xs text-gray-500">Set working hours</span>
+                        </div>
+                      </div>
+                      <FaArrowRight className="text-gray-400 group-hover:text-orange-500 transition-colors" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
@@ -378,9 +507,9 @@ const TherapistDashboard = () => {
           {!isLoading && (
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-4">
-                {sessions.length > 0 && stats.activeClients > 0 ? 'Today\'s Overview' : 
-                 sessions.length > 0 && stats.activeClients === 0 ? 'Build Your Practice' : 
-                 'Get Started'}
+                {sessions.length > 0 && stats.activeClients > 0 ? 'Today\'s Overview' :
+                  sessions.length > 0 && stats.activeClients === 0 ? 'Build Your Practice' :
+                    'Get Started'}
               </h2>
 
               {sessions.length > 0 && stats.activeClients > 0 ? (
@@ -389,14 +518,14 @@ const TherapistDashboard = () => {
                   <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-800">Today&#39;s Sessions</h3>
-                      <button 
+                      <button
                         onClick={() => window.location.href = '/therapist/sessions'}
                         className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
                       >
                         View All <FaArrowRight className="text-xs" />
                       </button>
                     </div>
-                    
+
                     <div className="space-y-3">
                       {sessions.slice(0, 3).map((session, index) => (
                         <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
@@ -421,20 +550,19 @@ const TherapistDashboard = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              session.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${session.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
                               session.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
+                                'bg-gray-100 text-gray-800'
+                              }`}>
                               {session.status}
                             </span>
                           </div>
                         </div>
                       ))}
-                      
+
                       {sessions.length > 3 && (
                         <div className="text-center pt-2">
-                          <button 
+                          <button
                             onClick={() => window.location.href = '/therapist/sessions'}
                             className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                           >
@@ -445,50 +573,7 @@ const TherapistDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Quick Actions */}
-                  <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                    <div className="space-y-3">
-                      <button 
-                        onClick={() => window.location.href = '/therapist/sessions'}
-                        className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <FaCalendarAlt className="text-blue-600" />
-                          </div>
-                          <span className="font-medium text-gray-800">Manage Sessions</span>
-                        </div>
-                        <FaArrowRight className="text-gray-400" />
-                      </button>
-                      
-                      <button 
-                        onClick={() => window.location.href = '/chats'}
-                        className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                            <FaUserFriends className="text-green-600" />
-                          </div>
-                          <span className="font-medium text-gray-800">Client Messages</span>
-                        </div>
-                        <FaArrowRight className="text-gray-400" />
-                      </button>
-                      
-                      <button 
-                        onClick={() => window.location.href = '/therapist/profile'}
-                        className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <FaClipboardList className="text-purple-600" />
-                          </div>
-                          <span className="font-medium text-gray-800">Update Profile</span>
-                        </div>
-                        <FaArrowRight className="text-gray-400" />
-                      </button>
-                    </div>
-                  </div>
+
                 </div>
               ) : sessions.length > 0 && stats.activeClients === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm p-6">
@@ -593,20 +678,23 @@ const TherapistDashboard = () => {
         </div>
       </div>
 
+
       {/* Toast Notifications */}
-      {toastNotifications.map((notification) => (
-        <NotificationToast
-          key={notification.id}
-          notification={notification}
-          onClose={(id) => setToastNotifications(prev => prev.filter(n => n.id !== id))}
-          onMarkAsRead={(id) => {
-            setToastNotifications(prev => 
-              prev.map(n => n.id === id ? { ...n, unread: false } : n)
-            );
-            markAsRead(id);
-          }}
-        />
-      ))}
+      {
+        toastNotifications.map((notification) => (
+          <NotificationToast
+            key={notification.id}
+            notification={notification}
+            onClose={(id) => setToastNotifications(prev => prev.filter(n => n.id !== id))}
+            onMarkAsRead={(id) => {
+              setToastNotifications(prev =>
+                prev.map(n => n.id === id ? { ...n, unread: false } : n)
+              );
+              markAsRead(id);
+            }}
+          />
+        ))
+      }
 
       {/* Notification Panel */}
       <NotificationPanel
@@ -619,7 +707,7 @@ const TherapistDashboard = () => {
         onClearAll={clearNotifications}
         mode="popover"
       />
-    </div>
+    </div >
   );
 };
 

@@ -8,6 +8,7 @@ import { useWebSocket } from '../../contexts/WebSocketContext';
 import NotificationToast from '../../components/notifications/NotificationToast';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { useAuthenticatedFetch } from '../../utils/api';
+import NextSessionBanner from '../../component/dashboard/NextSessionBanner';
 
 // Default content for when no sessions are available
 const defaultContent = {
@@ -57,6 +58,7 @@ const ClientDashboard = () => {
     totalSessions: 0,
     completedSessions: 0,
     upcomingSessions: 0,
+    todaySession: null,
     nextSession: null
   });
   const [messages, setMessages] = useState([]);
@@ -67,7 +69,6 @@ const ClientDashboard = () => {
   const authenticatedFetch = useAuthenticatedFetch();
 
   // Toast rendering on new notification
-  // Only show toast for live (WebSocket) notifications, not for missed/history
   useEffect(() => {
     if (notifications.length > 0) {
       const latestNotification = notifications[0];
@@ -80,6 +81,14 @@ const ClientDashboard = () => {
   const handleToastClose = () => setActiveToast(null);
   const handleToastRead = (id) => { markAsRead(id); setActiveToast(null); };
 
+  // Helper for time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   useEffect(() => {
     // Get user data from localStorage
     const userData = getUserData();
@@ -87,8 +96,8 @@ const ClientDashboard = () => {
       const userName = userData.username || userData.firstName || 'User';
       const nameParts = userName.split(' ');
       const initials = nameParts.length > 1
-          ? `${nameParts[0][0]}${nameParts[1][0]}`
-          : userName[0];
+        ? `${nameParts[0][0]}${nameParts[1][0]}`
+        : userName[0];
 
       setUser({
         name: userName,
@@ -103,12 +112,10 @@ const ClientDashboard = () => {
   }, []);
 
   const fetchDashboardData = async () => {
-
     setIsLoading(true);
     setError('');
 
     try {
-
       const sessionsResponse = await authenticatedFetch('http://localhost:3000/api/v1/client/sessions', {
         method: 'GET'
       });
@@ -117,20 +124,24 @@ const ClientDashboard = () => {
         const sessionsData = await sessionsResponse.json();
 
         // Filter to only upcoming sessions for display
-        const upcomingSessions = sessionsData.data.Sessions?.filter(s => s.status === 'upcoming') || [];
-        const completedSessions = sessionsData.data.Sessions?.filter(s => s.status === 'completed') || [];
+        const upcomingSessions = sessionsData.data.upcoming?.filter(s => s.status === 'upcoming') || [];
+
+        // Sort sessions by date (ascending) to ensure the next session is actually the soonest one
+        upcomingSessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const completedSessions = sessionsData.data.completed?.filter(s => s.status === 'completed') || [];
 
         // Only store upcoming sessions in local state so UI shows upcoming only
         setSessions(upcomingSessions);
 
         setStats({
-          totalSessions: sessionsData.data.Sessions?.length || 0,
+          totalSessions: sessionsData.data.totalSessions || 0,
           completedSessions: completedSessions.length,
           upcomingSessions: upcomingSessions.length,
-          nextSession: upcomingSessions[0] || null
+          nextSession: upcomingSessions[0] || null,
+          todaySession: Array.isArray(sessionsData.data.today) ? sessionsData.data.today[0] : sessionsData.data.today
         });
       }
-
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data. Please try again later.');
@@ -201,20 +212,20 @@ const ClientDashboard = () => {
       {
         title: "Progress",
         value: `${Math.round((stats.completedSessions / Math.max(stats.totalSessions, 1)) * 100)}%`,
-      icon: <FaHeart className="text-green-500" />,
+        icon: <FaHeart className="text-green-500" />,
         change: `${stats.completedSessions} completed`,
         color: "from-green-50 to-green-100",
         trend: "up"
-  },
-    {
-      title: "Upcoming",
-          value: stats.upcomingSessions.toString(),
+      },
+      {
+        title: "Upcoming",
+        value: stats.upcomingSessions.toString(),
         icon: <FaClock className="text-purple-500" />,
         change: "Sessions",
         color: "from-purple-50 to-purple-100",
         trend: "up"
-    }
-  ];
+      }
+    ];
   };
 
   const formatDate = (dateString) => {
@@ -237,225 +248,230 @@ const ClientDashboard = () => {
   };
 
   return (
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
-        {/* Mobile Sidebar Toggle */}
-        <button
-            onClick={toggleSidebar}
-            className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md md:hidden"
-        >
-          <FaBars className="text-gray-600" />
-        </button>
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Mobile Sidebar Toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md md:hidden"
+      >
+        <FaBars className="text-gray-600" />
+      </button>
 
-        {/* Fixed Sidebar */}
-        <div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-md z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-          <SideBar isTherapist={false} />
-        </div>
+      {/* Fixed Sidebar */}
+      <div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-md z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <SideBar isTherapist={false} />
+      </div>
 
-        {/* Overlay for mobile */}
-        {isSidebarOpen && isMobile && (
-            <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-                onClick={toggleSidebar}
-            />
-        )}
+      {/* Overlay for mobile */}
+      {isSidebarOpen && isMobile && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
 
-        {/* Main Content - Scrollable */}
-        <div className="flex-1 ml-0 md:ml-64 h-screen overflow-y-auto">
-          <div className="flex flex-col w-full p-3 md:p-6">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
-                  Welcome Back, {user.name}
-                </h1>
-                <p className="text-xs md:text-sm text-gray-500">
-                  Here&#39;s your therapy journey today
-                </p>
+      {/* Main Content - Scrollable */}
+      <div className="flex-1 ml-0 md:ml-64 h-screen overflow-y-auto">
+        <div className="flex flex-col w-full p-3 md:p-6">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
+                {getGreeting()}, {user.name}
+              </h1>
+              <p className="text-xs md:text-sm text-gray-500">
+                Your mental well-being is our priority today.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <FaBell className="text-base text-gray-500 cursor-pointer hover:text-blue-500 transition-colors" onClick={() => setIsNotificationPanelOpen(true)} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{unreadCount}</span>
+                )}
+                <NotificationPanel
+                  isOpen={isNotificationPanelOpen}
+                  onClose={() => setIsNotificationPanelOpen(false)}
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onClearAll={clearNotifications}
+                  mode="popover"
+                />
               </div>
-
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <FaBell className="text-base text-gray-500 cursor-pointer hover:text-blue-500 transition-colors" onClick={() => setIsNotificationPanelOpen(true)} />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{unreadCount}</span>
-                  )}
-                  <NotificationPanel
-                    isOpen={isNotificationPanelOpen}
-                    onClose={() => setIsNotificationPanelOpen(false)}
-                    notifications={notifications}
-                    unreadCount={unreadCount}
-                    onMarkAsRead={markAsRead}
-                    onMarkAllAsRead={markAllAsRead}
-                    onClearAll={clearNotifications}
-                    mode="popover"
+              <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm">
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt={user.name}
+                    className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover"
                   />
-                </div>
-                <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm">
-                  {user.image ? (
-                      <img
-                          src={user.image}
-                          alt={user.name}
-                          className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover"
-                      />
-                  ) : (
-                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
-                        {user.initials}
-                      </div>
-                  )}
-                  <div className="hidden md:block">
-                    <p className="text-sm font-medium text-gray-800">{user.name}</p>
-                    <p className="text-xs text-gray-500">Client</p>
+                ) : (
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs">
+                    {user.initials}
                   </div>
+                )}
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium text-gray-800">{user.name}</p>
+                  <p className="text-xs text-gray-500">Client</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Error Message */}
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                  {error}
-                </div>
-            )}
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {error}
+            </div>
+          )}
 
-            {/* Loading State */}
-            {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                </div>
-            ) : (
-                <>
-                  {/* Stats Section */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    {generateStats().map((stat, index) => (
-                        <div key={index} className={`bg-gradient-to-br ${stat.color} p-4 rounded-xl shadow-sm`}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-gray-600">{stat.title}</p>
-                              <p className="text-xl font-semibold mt-1">{stat.value}</p>
-                            </div>
-                            <div className="text-2xl">{stat.icon}</div>
-                          </div>
-                          <div className="mt-2 flex items-center text-xs">
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <>
+              {/* Next Session Banner - Only show if it matches today */}
+              {stats.todaySession && (
+                <NextSessionBanner session={stats.todaySession} />
+              )}
+
+              {/* Stats Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {generateStats().map((stat, index) => (
+                  <div key={index} className={`bg-gradient-to-br ${stat.color} p-4 rounded-xl shadow-sm`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">{stat.title}</p>
+                        <p className="text-xl font-semibold mt-1">{stat.value}</p>
+                      </div>
+                      <div className="text-2xl">{stat.icon}</div>
+                    </div>
+                    <div className="mt-2 flex items-center text-xs">
                       <span className={`${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
                         {stat.change}
                       </span>
-                          </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Sessions Section */}
+          {!isLoading && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {sessions.length > 0 ? 'Upcoming Sessions' : 'Get Started'}
+              </h2>
+
+              {sessions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {sessions.map((session, index) => (
+                    <SessionCard
+                      key={index}
+                      therapist={`${session.therapistId.firstName} ${session.therapistId.lastName}`}
+                      date={format(parseISO(session.date), 'do MMMM, yyyy')}
+                      time={session.scheduledTime}
+                      status={session.status}
+                      client={`${session.therapistId.firstName} ${session.therapistId.lastName}`}
+                      clientImage={session.therapistId.profile.avatar}
+                      duration={session.duration}
+                      type={session.therapyType}
+                      notes={session.notes}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FaUserPlus className="text-blue-600 text-2xl" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                      Ready to Start Your Therapy Journey?
+                    </h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      Connect with licensed therapists who can help you on your path to better mental health and well-being.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {defaultContent.nextSteps.map((step, index) => (
+                        <div key={index} className="text-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                          <div className="text-2xl mb-2">{step.icon}</div>
+                          <h4 className="font-medium text-gray-800 mb-1">{step.title}</h4>
+                          <p className="text-sm text-gray-600 mb-3">{step.description}</p>
+                          <button
+                            onClick={() => window.location.href = step.link}
+                            className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                          >
+                            {step.action} →
+                          </button>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Messages Section */}
+          {!isLoading && (
+            <div>
+              <h2 className="text-lg font-semibold mb-4">
+                {messages.length > 0 ? 'Recent Messages' : 'Tips for Your Journey'}
+              </h2>
+
+              {messages.length > 0 ? (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div key={message.id} className="bg-white p-4 rounded-xl shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <img src={message.senderImage} alt={message.sender} className="w-10 h-10 rounded-full" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">{message.sender}</h3>
+                            <span className="text-xs text-gray-500">{message.time}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{message.message}</p>
+                        </div>
+                        {message.unread && (
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {defaultContent.tips.map((tip, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 border border-gray-100 rounded-lg">
+                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <FaCheckCircle className="text-green-600 text-sm" />
+                        </div>
+                        <p className="text-sm text-gray-700">{tip}</p>
+                      </div>
                     ))}
                   </div>
-                </>
-            )}
-
-            {/* Sessions Section */}
-            {!isLoading && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold mb-4">
-                    {sessions.length > 0 ? 'Upcoming Sessions' : 'Get Started'}
-                  </h2>
-
-                  {sessions.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {sessions.map((session, index) => (
-                            <SessionCard
-                                key={index}
-                                therapist={`${session.therapistId.firstName} ${session.therapistId.lastName}`}
-                                date={format(parseISO(session.date), 'do MMMM, yyyy')}
-                                time={session.scheduledTime}
-                                status={session.status}
-                                client={`${session.therapistId.firstName} ${session.therapistId.lastName}`}
-                                clientImage={session.therapistId.profile.avatar}
-                                duration={session.duration}
-                                type={session.therapyType}
-                                notes={session.notes}
-                            />
-                        ))}
-                      </div>
-                  ) : (
-                      <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="text-center">
-                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaUserPlus className="text-blue-600 text-2xl" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                            Ready to Start Your Therapy Journey?
-                          </h3>
-                          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                            Connect with licensed therapists who can help you on your path to better mental health and well-being.
-                          </p>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {defaultContent.nextSteps.map((step, index) => (
-                                <div key={index} className="text-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                                  <div className="text-2xl mb-2">{step.icon}</div>
-                                  <h4 className="font-medium text-gray-800 mb-1">{step.title}</h4>
-                                  <p className="text-sm text-gray-600 mb-3">{step.description}</p>
-                                  <button
-                                      onClick={() => window.location.href = step.link}
-                                      className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
-                                  >
-                                    {step.action} →
-                                  </button>
-                                </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                  )}
                 </div>
-            )}
-
-            {/* Messages Section */}
-            {!isLoading && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-4">
-                    {messages.length > 0 ? 'Recent Messages' : 'Tips for Your Journey'}
-                  </h2>
-
-                  {messages.length > 0 ? (
-                      <div className="space-y-4">
-                        {messages.map((message) => (
-                            <div key={message.id} className="bg-white p-4 rounded-xl shadow-sm">
-                              <div className="flex items-start gap-3">
-                                <img src={message.senderImage} alt={message.sender} className="w-10 h-10 rounded-full" />
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <h3 className="font-medium">{message.sender}</h3>
-                                    <span className="text-xs text-gray-500">{message.time}</span>
-                                  </div>
-                                  <p className="text-sm text-gray-600 mt-1">{message.message}</p>
-                                </div>
-                                {message.unread && (
-                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                )}
-                              </div>
-                            </div>
-                        ))}
-                      </div>
-                  ) : (
-                      <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {defaultContent.tips.map((tip, index) => (
-                              <div key={index} className="flex items-start gap-3 p-3 border border-gray-100 rounded-lg">
-                                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                  <FaCheckCircle className="text-green-600 text-sm" />
-                                </div>
-                                <p className="text-sm text-gray-700">{tip}</p>
-                              </div>
-                          ))}
-                        </div>
-                      </div>
-                  )}
-                </div>
-            )}
-            {activeToast && (
-  <NotificationToast 
-    notification={activeToast}
-    onClose={handleToastClose}
-    onMarkAsRead={handleToastRead}
-  />
-)}
-          </div>
+              )}
+            </div>
+          )}
+          {activeToast && (
+            <NotificationToast
+              notification={activeToast}
+              onClose={handleToastClose}
+              onMarkAsRead={handleToastRead}
+            />
+          )}
         </div>
       </div>
+    </div>
   );
 };
 
